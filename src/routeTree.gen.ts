@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated/turmas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -39,18 +40,25 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTurmasIndexRoute =
+  AuthenticatedTurmasIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedTurmasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/turmas': typeof AuthenticatedTurmasRoute
+  '/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/turmas/': typeof AuthenticatedTurmasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/turmas': typeof AuthenticatedTurmasRoute
+  '/turmas': typeof AuthenticatedTurmasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,11 +66,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/turmas': typeof AuthenticatedTurmasRoute
+  '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/_authenticated/turmas/': typeof AuthenticatedTurmasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/home' | '/turmas'
+  fullPaths: '/' | '/auth' | '/home' | '/turmas' | '/turmas/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/auth' | '/home' | '/turmas'
   id:
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/home'
     | '/_authenticated/turmas'
+    | '/_authenticated/turmas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,17 +127,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/turmas/': {
+      id: '/_authenticated/turmas/'
+      path: '/'
+      fullPath: '/turmas/'
+      preLoaderRoute: typeof AuthenticatedTurmasIndexRouteImport
+      parentRoute: typeof AuthenticatedTurmasRoute
+    }
   }
 }
 
+interface AuthenticatedTurmasRouteChildren {
+  AuthenticatedTurmasIndexRoute: typeof AuthenticatedTurmasIndexRoute
+}
+
+const AuthenticatedTurmasRouteChildren: AuthenticatedTurmasRouteChildren = {
+  AuthenticatedTurmasIndexRoute: AuthenticatedTurmasIndexRoute,
+}
+
+const AuthenticatedTurmasRouteWithChildren =
+  AuthenticatedTurmasRoute._addFileChildren(AuthenticatedTurmasRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
-  AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRoute
+  AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
-  AuthenticatedTurmasRoute: AuthenticatedTurmasRoute,
+  AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
