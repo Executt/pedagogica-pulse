@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as React from "react";
 import { LogOut, Megaphone, ChevronRight, School, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -146,5 +147,3 @@ function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
     </Card>
   );
 }
-
-import * as React from "react";
