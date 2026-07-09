@@ -459,6 +459,14 @@ export type Database = {
     }
     Functions: {
       has_school_access: { Args: { _school_id: string }; Returns: boolean }
+      list_all_schools: {
+        Args: never
+        Returns: {
+          city: string
+          id: string
+          name: string
+        }[]
+      }
       user_school_ids: { Args: never; Returns: string[] }
     }
     Enums: {
