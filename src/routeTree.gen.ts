@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated/turmas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
+import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenticated/comunicados'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
@@ -49,6 +50,12 @@ const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
   path: '/curadoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedComunicadosRoute =
+  AuthenticatedComunicadosRouteImport.update({
+    id: '/comunicados',
+    path: '/comunicados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/comunicados': typeof AuthenticatedComunicadosRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
@@ -88,6 +96,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/comunicados': typeof AuthenticatedComunicadosRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
@@ -100,6 +109,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/comunicados': typeof AuthenticatedComunicadosRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agenda'
+    | '/comunicados'
     | '/curadoria'
     | '/home'
     | '/turmas'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agenda'
+    | '/comunicados'
     | '/curadoria'
     | '/home'
     | '/alunos/$studentId'
@@ -135,6 +147,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/agenda'
+    | '/_authenticated/comunicados'
     | '/_authenticated/curadoria'
     | '/_authenticated/home'
     | '/_authenticated/turmas'
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/comunicados': {
+      id: '/_authenticated/comunicados'
+      path: '/comunicados'
+      fullPath: '/comunicados'
+      preLoaderRoute: typeof AuthenticatedComunicadosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/agenda': {
       id: '/_authenticated/agenda'
       path: '/agenda'
@@ -239,6 +259,7 @@ const AuthenticatedTurmasRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedComunicadosRoute: typeof AuthenticatedComunicadosRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
@@ -247,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedComunicadosRoute: AuthenticatedComunicadosRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
