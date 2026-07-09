@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated/turmas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
+import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
@@ -48,6 +49,11 @@ const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
   path: '/curadoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTurmasIndexRoute =
   AuthenticatedTurmasIndexRouteImport.update({
     id: '/',
@@ -70,6 +76,7 @@ const AuthenticatedAlunosStudentIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/agenda'
     | '/curadoria'
     | '/home'
     | '/turmas'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/agenda'
     | '/curadoria'
     | '/home'
     | '/alunos/$studentId'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/agenda'
     | '/_authenticated/curadoria'
     | '/_authenticated/home'
     | '/_authenticated/turmas'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/agenda': {
+      id: '/_authenticated/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/turmas/': {
       id: '/_authenticated/turmas/'
       path: '/'
@@ -219,6 +238,7 @@ const AuthenticatedTurmasRouteWithChildren =
   AuthenticatedTurmasRoute._addFileChildren(AuthenticatedTurmasRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
@@ -226,6 +246,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
