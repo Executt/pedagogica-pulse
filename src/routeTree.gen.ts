@@ -16,6 +16,7 @@ import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
+import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -53,12 +54,19 @@ const AuthenticatedTurmasClassIdRoute =
     path: '/$classId',
     getParentRoute: () => AuthenticatedTurmasRoute,
   } as any)
+const AuthenticatedAlunosStudentIdRoute =
+  AuthenticatedAlunosStudentIdRouteImport.update({
+    id: '/alunos/$studentId',
+    path: '/alunos/$studentId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof AuthenticatedHomeRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas/': typeof AuthenticatedTurmasIndexRoute
 }
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas': typeof AuthenticatedTurmasIndexRoute
 }
@@ -76,6 +85,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/_authenticated/turmas/': typeof AuthenticatedTurmasIndexRoute
 }
@@ -86,10 +96,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/home'
     | '/turmas'
+    | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/home' | '/turmas/$classId' | '/turmas'
+  to:
+    | '/'
+    | '/auth'
+    | '/home'
+    | '/alunos/$studentId'
+    | '/turmas/$classId'
+    | '/turmas'
   id:
     | '__root__'
     | '/'
@@ -97,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/home'
     | '/_authenticated/turmas'
+    | '/_authenticated/alunos/$studentId'
     | '/_authenticated/turmas/$classId'
     | '/_authenticated/turmas/'
   fileRoutesById: FileRoutesById
@@ -158,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTurmasClassIdRouteImport
       parentRoute: typeof AuthenticatedTurmasRoute
     }
+    '/_authenticated/alunos/$studentId': {
+      id: '/_authenticated/alunos/$studentId'
+      path: '/alunos/$studentId'
+      fullPath: '/alunos/$studentId'
+      preLoaderRoute: typeof AuthenticatedAlunosStudentIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -177,11 +202,13 @@ const AuthenticatedTurmasRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
+  AuthenticatedAlunosStudentIdRoute: typeof AuthenticatedAlunosStudentIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
+  AuthenticatedAlunosStudentIdRoute: AuthenticatedAlunosStudentIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
