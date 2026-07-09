@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated/turmas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
@@ -42,6 +43,11 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
+  id: '/curadoria',
+  path: '/curadoria',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTurmasIndexRoute =
   AuthenticatedTurmasIndexRouteImport.update({
     id: '/',
@@ -64,6 +70,7 @@ const AuthenticatedAlunosStudentIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/curadoria'
     | '/home'
     | '/turmas'
     | '/alunos/$studentId'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/curadoria'
     | '/home'
     | '/alunos/$studentId'
     | '/turmas/$classId'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/curadoria'
     | '/_authenticated/home'
     | '/_authenticated/turmas'
     | '/_authenticated/alunos/$studentId'
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/curadoria': {
+      id: '/_authenticated/curadoria'
+      path: '/curadoria'
+      fullPath: '/curadoria'
+      preLoaderRoute: typeof AuthenticatedCuradoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/turmas/': {
       id: '/_authenticated/turmas/'
       path: '/'
@@ -200,12 +219,14 @@ const AuthenticatedTurmasRouteWithChildren =
   AuthenticatedTurmasRoute._addFileChildren(AuthenticatedTurmasRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
   AuthenticatedAlunosStudentIdRoute: typeof AuthenticatedAlunosStudentIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
   AuthenticatedAlunosStudentIdRoute: AuthenticatedAlunosStudentIdRoute,
