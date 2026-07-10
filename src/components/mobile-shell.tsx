@@ -1,13 +1,13 @@
 import { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Sparkles, Calendar, User } from "lucide-react";
+import { Home, Users, Sparkles, FolderUp, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/home", label: "Início", icon: Home },
   { to: "/turmas", label: "Turmas", icon: Users },
+  { to: "/registros", label: "Registros", icon: FolderUp },
   { to: "/curadoria", label: "IA", icon: Sparkles },
-  { to: "/agenda", label: "Agenda", icon: Calendar },
   { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
