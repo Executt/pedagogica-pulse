@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated/turmas'
+import { Route as AuthenticatedRegistrosRouteImport } from './routes/_authenticated/registros'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedTurmasRoute = AuthenticatedTurmasRouteImport.update({
   id: '/turmas',
   path: '/turmas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRegistrosRoute = AuthenticatedRegistrosRouteImport.update({
+  id: '/registros',
+  path: '/registros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/registros': typeof AuthenticatedRegistrosRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/curadoria': typeof AuthenticatedCuradoriaRoute
   '/home': typeof AuthenticatedHomeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/registros': typeof AuthenticatedRegistrosRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas': typeof AuthenticatedTurmasIndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/registros': typeof AuthenticatedRegistrosRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/curadoria'
     | '/home'
     | '/perfil'
+    | '/registros'
     | '/turmas'
     | '/alunos/$studentId'
     | '/turmas/$classId'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/curadoria'
     | '/home'
     | '/perfil'
+    | '/registros'
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/curadoria'
     | '/_authenticated/home'
     | '/_authenticated/perfil'
+    | '/_authenticated/registros'
     | '/_authenticated/turmas'
     | '/_authenticated/alunos/$studentId'
     | '/_authenticated/turmas/$classId'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/turmas'
       fullPath: '/turmas'
       preLoaderRoute: typeof AuthenticatedTurmasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/registros': {
+      id: '/_authenticated/registros'
+      path: '/registros'
+      fullPath: '/registros'
+      preLoaderRoute: typeof AuthenticatedRegistrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/perfil': {
@@ -282,6 +301,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedRegistrosRoute: typeof AuthenticatedRegistrosRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
   AuthenticatedAlunosStudentIdRoute: typeof AuthenticatedAlunosStudentIdRoute
 }
@@ -292,6 +312,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedRegistrosRoute: AuthenticatedRegistrosRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
   AuthenticatedAlunosStudentIdRoute: AuthenticatedAlunosStudentIdRoute,
 }
