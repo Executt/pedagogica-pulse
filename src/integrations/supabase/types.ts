@@ -223,13 +223,19 @@ export type Database = {
           class_id: string | null
           created_at: string
           description: string | null
+          duration_seconds: number | null
+          external_id: string | null
           id: string
           mime_type: string | null
           name: string
           school_id: string
           size_bytes: number | null
           student_id: string | null
+          sync_error: string | null
+          synced_at: string | null
           tags: string[] | null
+          time_range_end: string | null
+          time_range_start: string | null
           uploader_id: string
           url: string
         }
@@ -237,13 +243,19 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           description?: string | null
+          duration_seconds?: number | null
+          external_id?: string | null
           id?: string
           mime_type?: string | null
           name: string
           school_id: string
           size_bytes?: number | null
           student_id?: string | null
+          sync_error?: string | null
+          synced_at?: string | null
           tags?: string[] | null
+          time_range_end?: string | null
+          time_range_start?: string | null
           uploader_id: string
           url: string
         }
@@ -251,13 +263,19 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           description?: string | null
+          duration_seconds?: number | null
+          external_id?: string | null
           id?: string
           mime_type?: string | null
           name?: string
           school_id?: string
           size_bytes?: number | null
           student_id?: string | null
+          sync_error?: string | null
+          synced_at?: string | null
           tags?: string[] | null
+          time_range_end?: string | null
+          time_range_start?: string | null
           uploader_id?: string
           url?: string
         }
