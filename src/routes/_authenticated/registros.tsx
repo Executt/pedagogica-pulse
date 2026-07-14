@@ -282,6 +282,7 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
   const user = useCurrentUser();
   const roles = useMyRoles();
   const qc = useQueryClient();
+  const syncFn = useServerFn(syncMaterialToPulse);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLInputElement>(null);
@@ -295,6 +296,11 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
   const [studentId, setStudentId] = useState<string>("");
   const [schoolId, setSchoolId] = useState<string>("");
   const [progress, setProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [rangeStart, setRangeStart] = useState<string>(() => defaultLocalNow(-30));
+  const [rangeEnd, setRangeEnd] = useState<string>(() => defaultLocalNow(0));
 
   const schools = roles.data?.map((r) => ({ id: r.school_id, name: r.schools?.name ?? "Escola" })) ?? [];
   const effectiveSchool = schoolId || schools[0]?.id || "";
@@ -320,10 +326,47 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
 
   const pick = (r: React.RefObject<HTMLInputElement | null>) => r.current?.click();
 
+  // Limites de validação
+  const MAX_MB = 20;
+  const MAX_AUDIO_SEC = 60 * 30; // 30 min
+  const ALLOWED_MIME = /^(image\/|audio\/|video\/|application\/(pdf|msword|vnd\.|vnd\.openxmlformats|vnd\.ms-)|text\/plain)/;
+
   const onFile = (f: File | null) => {
-    if (!f) return;
+    setValidationError(null);
+    setDuration(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    if (!f) { setFile(null); return; }
+
+    // Validações síncronas
+    if (f.size > MAX_MB * 1024 * 1024) {
+      setValidationError(`Arquivo muito grande (${(f.size / 1024 / 1024).toFixed(1)} MB). Máximo ${MAX_MB} MB.`);
+      setFile(null);
+      return;
+    }
+    const mime = f.type || "";
+    if (mime && !ALLOWED_MIME.test(mime)) {
+      setValidationError(`Tipo não permitido: ${mime}. Envie imagem, áudio, vídeo ou documento.`);
+      setFile(null);
+      return;
+    }
+
     setFile(f);
     if (!name) setName(f.name.replace(/\.[^.]+$/, ""));
+    setPreviewUrl(URL.createObjectURL(f));
+  };
+
+  // Cleanup do preview
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  // Captura duração de áudio/vídeo assim que o preview carrega
+  const onMediaLoaded = (e: React.SyntheticEvent<HTMLAudioElement | HTMLVideoElement>) => {
+    const d = (e.currentTarget as HTMLMediaElement).duration;
+    if (!isFinite(d)) return;
+    setDuration(d);
+    if (d > MAX_AUDIO_SEC) {
+      setValidationError(`Duração ${formatDuration(d)} excede o máximo de ${formatDuration(MAX_AUDIO_SEC)}.`);
+    }
   };
 
   const upload = useMutation({
@@ -332,6 +375,14 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
       if (!file) throw new Error("Selecione um arquivo");
       if (!name.trim()) throw new Error("Dê um nome ao registro");
       if (!effectiveSchool) throw new Error("Escola não definida");
+      if (validationError) throw new Error(validationError);
+
+      // Trecho de tempo: se ambos preenchidos, validar ordem
+      const tStart = rangeStart ? new Date(rangeStart).toISOString() : null;
+      const tEnd = rangeEnd ? new Date(rangeEnd).toISOString() : null;
+      if (tStart && tEnd && new Date(tStart) > new Date(tEnd)) {
+        throw new Error("Início do trecho de tempo é depois do fim");
+      }
 
       const ext = file.name.split(".").pop() || "bin";
       const key = `${user.id}/${effectiveSchool}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
@@ -345,7 +396,7 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
       setProgress(70);
 
       const tags = tagsText.split(",").map((t) => t.trim()).filter(Boolean);
-      const { error: insErr } = await supabase.from("materials").insert({
+      const { data: inserted, error: insErr } = await supabase.from("materials").insert({
         school_id: effectiveSchool,
         class_id: classId || null,
         student_id: studentId || null,
@@ -356,8 +407,22 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
         size_bytes: file.size,
         tags: tags.length ? tags : null,
         url: key,
-      });
+        time_range_start: tStart,
+        time_range_end: tEnd,
+        duration_seconds: duration,
+      }).select("id").single();
       if (insErr) throw insErr;
+      setProgress(90);
+
+      // Sincronização com o sistema externo (não bloqueia a UX se falhar)
+      try {
+        const r = await syncFn({ data: { materialId: inserted!.id } });
+        if (!r?.ok) {
+          console.warn("[pulse-sync] não sincronizado:", r);
+        }
+      } catch (e) {
+        console.warn("[pulse-sync] erro ao chamar server fn:", e);
+      }
       setProgress(100);
     },
     onSuccess: () => {
@@ -366,6 +431,7 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
       qc.invalidateQueries({ queryKey: ["class"] });
       setFile(null); setName(""); setDescription(""); setTagsText("");
       setClassId(""); setStudentId(""); setProgress(0);
+      setPreviewUrl(null); setDuration(null); setValidationError(null);
       onDone();
     },
     onError: (e: any) => { toast.error(e.message ?? "Falha no envio"); setProgress(0); },
@@ -391,17 +457,43 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
         <input ref={docRef} type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx" hidden onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
 
         {file && (
-          <Card className="p-3 rounded-xl flex items-center gap-3">
-            <div className="size-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
-              <Upload className="size-4" />
+          <Card className="p-3 rounded-xl space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
+                <Upload className="size-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{file.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {(file.size / 1024).toFixed(0)} KB · {file.type || "arquivo"}
+                  {duration ? ` · ${formatDuration(duration)}` : ""}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" className="size-7" onClick={() => onFile(null)}>
+                <X className="size-4" />
+              </Button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{file.name}</p>
-              <p className="text-[10px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB · {file.type || "arquivo"}</p>
-            </div>
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => setFile(null)}>
-              <X className="size-4" />
-            </Button>
+
+            {/* Pré-visualização */}
+            {previewUrl && file.type.startsWith("image/") && (
+              <img src={previewUrl} alt="preview" className="w-full max-h-64 object-contain rounded-lg bg-muted" />
+            )}
+            {previewUrl && file.type.startsWith("audio/") && (
+              <audio controls src={previewUrl} onLoadedMetadata={onMediaLoaded} className="w-full" />
+            )}
+            {previewUrl && file.type.startsWith("video/") && (
+              <video controls src={previewUrl} onLoadedMetadata={onMediaLoaded} className="w-full max-h-64 rounded-lg bg-black" />
+            )}
+            {previewUrl && !file.type.match(/^(image|audio|video)\//) && (
+              <a href={previewUrl} target="_blank" rel="noreferrer"
+                 className="block text-xs text-primary underline">Abrir pré-visualização do documento</a>
+            )}
+
+            {validationError && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="size-3.5" /> {validationError}
+              </p>
+            )}
           </Card>
         )}
 
@@ -420,6 +512,23 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
             <Label className="text-xs flex items-center gap-1"><Tag className="size-3" /> Tags (separadas por vírgula)</Label>
             <Input placeholder="família, comportamento, reforço"
               value={tagsText} onChange={(e) => setTagsText(e.target.value)} className="mt-1 rounded-xl" />
+          </div>
+
+          <div className="rounded-xl border p-3 space-y-2 bg-secondary/30">
+            <Label className="text-xs flex items-center gap-1"><Clock className="size-3" /> Trecho de tempo coberto pelo registro</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-[10px] text-muted-foreground">Início</span>
+                <Input type="datetime-local" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="mt-0.5 rounded-lg h-9" />
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground">Fim</span>
+                <Input type="datetime-local" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="mt-0.5 rounded-lg h-9" />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              O sistema usa esse intervalo para compor o contexto do aluno no período.
+            </p>
           </div>
 
           {schools.length > 1 && (
@@ -467,7 +576,7 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
       <SheetFooter className="px-5 py-3 border-t bg-background">
         <Button
           className="w-full h-11 rounded-xl"
-          disabled={!file || !name.trim() || upload.isPending}
+          disabled={!file || !name.trim() || upload.isPending || !!validationError}
           onClick={() => upload.mutate()}
         >
           {upload.isPending ? <><Loader2 className="size-4 mr-2 animate-spin" /> Enviando...</> : <><Upload className="size-4 mr-2" /> Enviar registro</>}
@@ -475,6 +584,12 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
       </SheetFooter>
     </SheetContent>
   );
+}
+
+function defaultLocalNow(minutesOffset: number) {
+  const d = new Date(Date.now() + minutesOffset * 60_000);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function SourceBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
