@@ -200,11 +200,19 @@ function MaterialCard({ m }: { m: Material }) {
           <div className="flex items-center justify-between mt-2">
             <p className="text-[10px] text-muted-foreground">
               {new Date(m.created_at).toLocaleDateString("pt-BR")} · {humanSize(m.size_bytes)}
+              {m.duration_seconds ? ` · ${formatDuration(m.duration_seconds)}` : ""}
             </p>
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={isAudio ? previewAudio : openFile}>
               {isAudio ? (signedUrl ? "Tocando" : "Ouvir") : "Abrir"}
             </Button>
           </div>
+          {(m.time_range_start || m.time_range_end) && (
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Clock className="size-3" />
+              {formatRange(m.time_range_start, m.time_range_end)}
+            </p>
+          )}
+          <SyncBadge synced={!!m.synced_at} error={m.sync_error} />
           {isAudio && signedUrl && (
             <audio className="w-full mt-2" controls autoPlay src={signedUrl} />
           )}
@@ -212,6 +220,36 @@ function MaterialCard({ m }: { m: Material }) {
       </div>
     </Card>
   );
+}
+
+function SyncBadge({ synced, error }: { synced: boolean; error: string | null }) {
+  if (synced) {
+    return (
+      <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-emerald-600">
+        <CheckCircle2 className="size-3" /> Sincronizado com o sistema
+      </span>
+    );
+  }
+  if (error) {
+    return (
+      <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-amber-600" title={error}>
+        <AlertCircle className="size-3" /> Sincronização pendente
+      </span>
+    );
+  }
+  return null;
+}
+
+function formatDuration(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatRange(a?: string | null, b?: string | null) {
+  const fmt = (v?: string | null) =>
+    v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "?";
+  return `${fmt(a)} → ${fmt(b)}`;
 }
 
 function extractPathFromUrl(url: string) {
