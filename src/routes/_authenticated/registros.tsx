@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { syncMaterialToPulse } from "@/lib/pulse-sync.functions";
 import {
   Camera, Image as ImageIcon, FileText, Mic, Upload, Search, Filter,
   FileAudio, FileImage, File as FileIcon, X, Plus, Loader2, Tag,
+  Clock, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyRoles } from "@/hooks/use-current-user";
@@ -37,6 +40,11 @@ type Material = {
   class_id: string | null;
   student_id: string | null;
   school_id: string;
+  time_range_start: string | null;
+  time_range_end: string | null;
+  duration_seconds: number | null;
+  synced_at: string | null;
+  sync_error: string | null;
   classes?: { name: string } | null;
   students?: { full_name: string } | null;
 };
