@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Sparkles, Check, Clock, X } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,10 @@ import { MobileShell } from "@/components/mobile-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { usePaginated } from "@/hooks/use-paginated";
+import { ErrorRetry, LoadMore, DemoBadge } from "@/components/query-state";
+import { getMockData, useMockMode } from "@/lib/mock-mode";
 
 type Status = "pending" | "applied" | "scheduled" | "discarded";
 
@@ -18,9 +22,10 @@ export const Route = createFileRoute("/_authenticated/curadoria")({
 
 function Curadoria() {
   const [status, setStatus] = useState<Status>("pending");
-  const q = useQuery({
+  const mock = useMockMode();
+  const q = useSmartQuery<any[]>({
     queryKey: ["suggestions", status],
-    queryFn: async () => {
+    apiFn: async () => {
       const { data, error } = await supabase
         .from("ai_suggestions")
         .select("*, classes(name), students(full_name)")
@@ -29,10 +34,13 @@ function Curadoria() {
       if (error) throw error;
       return data ?? [];
     },
+    mockFn: () => getMockData().suggestions.filter((s) => s.status === status),
   });
+  const items = q.data?.data ?? [];
+  const page = usePaginated(items, 8);
 
   return (
-    <MobileShell title="Curadoria da IA">
+    <MobileShell title="Curadoria da IA" action={q.data?.source === "mock" || mock ? <DemoBadge /> : undefined}>
       <div className="px-5 pt-4">
         <Tabs value={status} onValueChange={(v) => setStatus(v as Status)}>
           <TabsList className="grid grid-cols-4 h-10 w-full rounded-xl">
@@ -43,13 +51,15 @@ function Curadoria() {
           </TabsList>
           <TabsContent value={status} className="mt-4 space-y-3">
             {q.isLoading && <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>}
-            {q.data?.length === 0 && (
+            {q.isError && <ErrorRetry error={q.error} onRetry={() => q.refetch()} usingFallback />}
+            {!q.isLoading && !q.isError && items.length === 0 && (
               <div className="py-12 text-center">
                 <Sparkles className="size-10 text-muted-foreground/40 mx-auto" />
                 <p className="text-sm text-muted-foreground mt-2">Nada por aqui.</p>
               </div>
             )}
-            {q.data?.map((s) => <SuggestionCard key={s.id} s={s} />)}
+            {page.visible.map((s) => <SuggestionCard key={s.id} s={s} />)}
+            <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
           </TabsContent>
         </Tabs>
       </div>
