@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, Megaphone, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { usePaginated } from "@/hooks/use-paginated";
+import { ErrorRetry, LoadMore, DemoBadge } from "@/components/query-state";
+import { getMockData } from "@/lib/mock-mode";
 
 export const Route = createFileRoute("/_authenticated/comunicados")({
   component: Comunicados,
@@ -18,15 +22,18 @@ export const Route = createFileRoute("/_authenticated/comunicados")({
 
 function Comunicados() {
   const navigate = useNavigate();
-  const q = useQuery({
+  const q = useSmartQuery<any[]>({
     queryKey: ["announcements"],
-    queryFn: async () => {
+    apiFn: async () => {
       const { data, error } = await supabase.from("announcements")
         .select("*, schools(name)").order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
+    mockFn: () => getMockData().announcements,
   });
+  const items = q.data?.data ?? [];
+  const page = usePaginated(items, 8);
 
   return (
     <div className="app-shell flex flex-col">
@@ -35,17 +42,21 @@ function Comunicados() {
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/perfil" })}><ArrowLeft className="size-5" /></Button>
           <h1 className="font-semibold text-sm">Comunicados</h1>
         </div>
-        <NewAnnouncementSheet />
+        <div className="flex items-center gap-2">
+          {q.data?.source === "mock" && <DemoBadge />}
+          <NewAnnouncementSheet />
+        </div>
       </header>
 
       <div className="px-5 pt-4 pb-24 space-y-2">
-        {q.data?.length === 0 && (
+        {q.isError && <ErrorRetry error={q.error} onRetry={() => q.refetch()} usingFallback />}
+        {!q.isError && items.length === 0 && (
           <div className="py-16 text-center">
             <Megaphone className="size-10 text-muted-foreground/40 mx-auto" />
             <p className="text-sm text-muted-foreground mt-2">Sem comunicados no mural.</p>
           </div>
         )}
-        {q.data?.map((a) => (
+        {page.visible.map((a) => (
           <Card key={a.id} className="p-4 rounded-2xl">
             <div className="flex items-center gap-2 mb-1">
               <Megaphone className="size-3.5 text-accent" />
@@ -56,6 +67,7 @@ function Comunicados() {
             <p className="text-[11px] text-muted-foreground mt-2">{new Date(a.created_at).toLocaleDateString("pt-BR")}</p>
           </Card>
         ))}
+        <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
       </div>
     </div>
   );
