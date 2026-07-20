@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Plus, MapPin, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -12,30 +12,35 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { ErrorRetry, DemoBadge } from "@/components/query-state";
+import { getMockData } from "@/lib/mock-mode";
 
 export const Route = createFileRoute("/_authenticated/agenda")({
   component: Agenda,
 });
 
 function Agenda() {
-  const q = useQuery({
+  const q = useSmartQuery<any[]>({
     queryKey: ["events"],
-    queryFn: async () => {
+    apiFn: async () => {
       const { data, error } = await supabase.from("events")
         .select("*, classes(name)")
         .order("starts_at");
       if (error) throw error;
       return data ?? [];
     },
+    mockFn: () => getMockData().events,
   });
-
-  const grouped = groupByDay(q.data ?? []);
+  const events = q.data?.data ?? [];
+  const grouped = groupByDay(events);
 
   return (
-    <MobileShell title="Agenda" action={<NewEventSheet />}>
+    <MobileShell title="Agenda" action={<div className="flex items-center gap-2">{q.data?.source === "mock" && <DemoBadge />}<NewEventSheet /></div>}>
       <div className="px-5 pt-4 space-y-6">
         {q.isLoading && <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>}
-        {Object.keys(grouped).length === 0 && !q.isLoading && (
+        {q.isError && <ErrorRetry error={q.error} onRetry={() => q.refetch()} usingFallback />}
+        {Object.keys(grouped).length === 0 && !q.isLoading && !q.isError && (
           <div className="py-16 text-center">
             <CalendarIcon className="size-10 text-muted-foreground/40 mx-auto" />
             <p className="text-sm text-muted-foreground mt-2">Nenhum evento na agenda.</p>

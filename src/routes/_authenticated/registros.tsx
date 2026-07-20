@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { syncMaterialToPulse } from "@/lib/pulse-sync.functions";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { usePaginated } from "@/hooks/use-paginated";
+import { ErrorRetry, LoadMore, DemoBadge } from "@/components/query-state";
+import { getMockData } from "@/lib/mock-mode";
 import {
   Camera, Image as ImageIcon, FileText, Mic, Upload, Search, Filter,
   FileAudio, FileImage, File as FileIcon, X, Plus, Loader2, Tag,
@@ -54,9 +58,9 @@ function RegistrosPage() {
   const [kind, setKind] = useState<"all" | "audio" | "image" | "doc">("all");
   const [open, setOpen] = useState(false);
 
-  const list = useQuery({
+  const list = useSmartQuery<Material[]>({
     queryKey: ["materials-list"],
-    queryFn: async () => {
+    apiFn: async () => {
       const { data, error } = await supabase
         .from("materials")
         .select("*, classes(name), students(full_name)")
@@ -65,11 +69,13 @@ function RegistrosPage() {
       if (error) throw error;
       return (data ?? []) as Material[];
     },
+    mockFn: () => getMockData().materials as unknown as Material[],
   });
 
+  const items = list.data?.data ?? [];
   const filtered = useMemo(() => {
     const t = q.toLowerCase().trim();
-    return (list.data ?? []).filter((m) => {
+    return items.filter((m) => {
       if (kind !== "all" && !matchKind(m.mime_type, kind)) return false;
       if (!t) return true;
       const bag = [
@@ -78,18 +84,23 @@ function RegistrosPage() {
       ].join(" ").toLowerCase();
       return bag.includes(t);
     });
-  }, [list.data, q, kind]);
+  }, [items, q, kind]);
+
+  const page = usePaginated(filtered, 10);
 
   return (
     <MobileShell
       title="Registros"
       action={
-        <Sheet open={open} onOpenChange={setOpen}>
+        <div className="flex items-center gap-2">
+          {list.data?.source === "mock" && <DemoBadge />}
+          <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button size="sm" className="rounded-xl h-9"><Plus className="size-4 mr-1" />Novo</Button>
           </SheetTrigger>
           <UploadSheet onDone={() => setOpen(false)} />
-        </Sheet>
+          </Sheet>
+        </div>
       }
     >
       <div className="px-5 pt-4 space-y-3">
@@ -125,14 +136,18 @@ function RegistrosPage() {
 
       <div className="px-5 mt-4 space-y-2">
         {list.isLoading && <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>}
-        {!list.isLoading && filtered.length === 0 && (
+        {list.isError && (
+          <ErrorRetry error={list.error} onRetry={() => list.refetch()} usingFallback />
+        )}
+        {!list.isLoading && !list.isError && filtered.length === 0 && (
           <div className="py-16 text-center">
             <FolderEmptyIcon />
             <p className="text-sm text-muted-foreground mt-3">Nenhum registro ainda.</p>
             <p className="text-xs text-muted-foreground mt-1">Toque em <b>Novo</b> para enviar áudio, foto ou documento.</p>
           </div>
         )}
-        {filtered.map((m) => <MaterialCard key={m.id} m={m} />)}
+        {page.visible.map((m) => <MaterialCard key={m.id} m={m} />)}
+        <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
       </div>
     </MobileShell>
   );
