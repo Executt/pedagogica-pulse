@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -9,6 +9,8 @@ import { MobileShell } from "@/components/mobile-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { useMockMode, setMockMode, resetMockData } from "@/lib/mock-mode";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -20,6 +22,7 @@ function Perfil() {
   const roles = useMyRoles();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const mock = useMockMode();
 
   async function signOut() {
     await qc.cancelQueries();
@@ -57,6 +60,39 @@ function Perfil() {
             </div>
           </Card>
         )}
+
+        <Card className="p-4 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-xl bg-accent/15 text-accent grid place-items-center shrink-0">
+              <Database className="size-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Modo demo</p>
+                  <p className="text-[11px] text-muted-foreground">Usa dados de exemplo — sem chamar a API.</p>
+                </div>
+                <Switch checked={mock} onCheckedChange={(v) => {
+                  setMockMode(v);
+                  qc.invalidateQueries();
+                  toast.success(v ? "Modo demo ativado" : "Modo demo desativado");
+                }} />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 h-9 rounded-xl w-full"
+                onClick={() => {
+                  resetMockData();
+                  qc.invalidateQueries();
+                  toast.success("Dados de demonstração recriados");
+                }}
+              >
+                <RefreshCw className="size-3.5 mr-1.5" /> Reiniciar dados mock
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         <Card className="rounded-2xl overflow-hidden divide-y divide-border/60">
           <Link to="/comunicados" className="flex items-center gap-3 p-4 active:bg-secondary/50">
