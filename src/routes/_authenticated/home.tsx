@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyRoles, useMyProfile } from "@/hooks/use-current-user";
 import { MobileShell, RiskBadge } from "@/components/mobile-shell";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Users, TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { ErrorRetry, DemoBadge } from "@/components/query-state";
+import { getMockData, useMockMode } from "@/lib/mock-mode";
 
 export const Route = createFileRoute("/_authenticated/home")({
   component: HomePage,
@@ -14,12 +16,13 @@ export const Route = createFileRoute("/_authenticated/home")({
 function HomePage() {
   const profile = useMyProfile();
   const roles = useMyRoles();
+  const mock = useMockMode();
   const schoolIds = roles.data?.map((r) => r.school_id) ?? [];
 
-  const stats = useQuery({
+  const stats = useSmartQuery({
     queryKey: ["dashboard-stats", schoolIds],
-    enabled: schoolIds.length > 0,
-    queryFn: async () => {
+    enabled: mock || schoolIds.length > 0,
+    apiFn: async () => {
       const [classes, students, suggestions, events] = await Promise.all([
         supabase.from("classes").select("id", { count: "exact", head: true }).in("school_id", schoolIds),
         supabase.from("students").select("id, risk"),
@@ -35,12 +38,23 @@ function HomePage() {
         upcomingEvents: events.data ?? [],
       };
     },
+    mockFn: () => {
+      const m = getMockData();
+      return {
+        classCount: m.stats.classCount,
+        studentCount: m.stats.studentCount,
+        highRisk: m.stats.highRisk,
+        pendingSuggestions: m.suggestions.filter((s) => s.status === "pending").length,
+        upcomingEvents: m.events.slice(0, 3),
+      };
+    },
   });
+  const data = stats.data?.data;
 
   const primaryRole = roles.data?.[0]?.role;
   const roleLabel = primaryRole === "diretor" ? "Diretor(a)" : primaryRole === "pedagogo" ? "Pedagogo(a)" : "Professor(a)";
 
-  if (roles.isSuccess && roles.data.length === 0) {
+  if (!mock && roles.isSuccess && roles.data.length === 0) {
     return (
       <MobileShell title="Início">
         <div className="p-6">
@@ -58,16 +72,23 @@ function HomePage() {
   return (
     <MobileShell>
       <div className="px-5 pt-8 pb-4">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{roleLabel}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{roleLabel}</p>
+          {stats.data?.source === "mock" && <DemoBadge />}
+        </div>
         <h1 className="text-2xl font-bold tracking-tight mt-1">Olá, {profile.data?.full_name?.split(" ")[0] ?? "educador"} 👋</h1>
-        <p className="text-sm text-muted-foreground mt-1">{roles.data?.[0]?.schools?.name ?? "—"}</p>
+        <p className="text-sm text-muted-foreground mt-1">{roles.data?.[0]?.schools?.name ?? "Escola Municipal ANA"}</p>
       </div>
 
+      {stats.isError && (
+        <div className="px-5"><ErrorRetry error={stats.error} onRetry={() => stats.refetch()} usingFallback /></div>
+      )}
+
       <div className="px-5 grid grid-cols-2 gap-3">
-        <StatCard icon={Users} label="Alunos" value={stats.data?.studentCount ?? "—"} tint="primary" />
-        <StatCard icon={TrendingUp} label="Turmas" value={stats.data?.classCount ?? "—"} tint="info" />
-        <StatCard icon={Sparkles} label="Sugestões IA" value={stats.data?.pendingSuggestions ?? "—"} tint="accent" href="/curadoria" />
-        <StatCard icon={AlertTriangle} label="Risco alto" value={stats.data?.highRisk ?? "—"} tint="danger" />
+        <StatCard icon={Users} label="Alunos" value={data?.studentCount ?? "—"} tint="primary" />
+        <StatCard icon={TrendingUp} label="Turmas" value={data?.classCount ?? "—"} tint="info" />
+        <StatCard icon={Sparkles} label="Sugestões IA" value={data?.pendingSuggestions ?? "—"} tint="accent" href="/curadoria" />
+        <StatCard icon={AlertTriangle} label="Risco alto" value={data?.highRisk ?? "—"} tint="danger" />
       </div>
 
       <section className="mt-8 px-5">
@@ -76,10 +97,10 @@ function HomePage() {
           <Link to="/agenda" className="text-xs text-primary font-medium">Ver tudo</Link>
         </div>
         <div className="space-y-2">
-          {stats.data?.upcomingEvents.length === 0 && (
+          {data?.upcomingEvents?.length === 0 && (
             <p className="text-sm text-muted-foreground py-4 text-center">Nenhum evento próximo.</p>
           )}
-          {stats.data?.upcomingEvents.map((e) => (
+          {data?.upcomingEvents?.map((e: any) => (
             <Card key={e.id} className="p-4 rounded-2xl flex items-center gap-3">
               <div className="size-11 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0 text-center">
                 <div className="leading-tight">
