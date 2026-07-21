@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Users, Sparkles, FolderUp, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ApiStatusBadge } from "@/components/api-status-badge";
 
 const tabs = [
   { to: "/home", label: "Início", icon: Home },
@@ -18,7 +19,10 @@ export function MobileShell({ children, title, action }: { children: ReactNode; 
     <div className="app-shell flex flex-col">
       {title && (
         <header className="sticky top-0 z-20 bg-background/85 backdrop-blur-lg border-b border-border/60 px-5 h-14 flex items-center justify-between">
-          <h1 className="font-semibold text-base tracking-tight truncate">{title}</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="font-semibold text-base tracking-tight truncate">{title}</h1>
+            <ApiStatusBadge />
+          </div>
           {action}
         </header>
       )}
