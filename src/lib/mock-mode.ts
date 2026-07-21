@@ -263,6 +263,29 @@ export function resetMockData(): MockData {
   return fresh;
 }
 
+/** Exporta os dados mock atuais como string JSON (pretty). */
+export function exportMockData(): string {
+  return JSON.stringify(safeRead(), null, 2);
+}
+
+/**
+ * Importa dados mock a partir de uma string JSON. Faz uma validação
+ * mínima da forma esperada e persiste. Lança em caso de JSON inválido
+ * ou estrutura incompatível.
+ */
+export function importMockData(raw: string): MockData {
+  const parsed = JSON.parse(raw) as Partial<MockData>;
+  const required: (keyof MockData)[] = [
+    "materials", "suggestions", "events", "announcements", "classes", "stats",
+  ];
+  for (const k of required) {
+    if (!(k in parsed)) throw new Error(`Campo obrigatório ausente: ${k}`);
+  }
+  const data = parsed as MockData;
+  persist(data);
+  return data;
+}
+
 export function isMockModeEnabled(): boolean {
   if (typeof window === "undefined") return true;
   const v = localStorage.getItem(KEY_MODE);
