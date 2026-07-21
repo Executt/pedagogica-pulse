@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useMockMode, setMockMode, resetMockData } from "@/lib/mock-mode";
+import { useMockMode, setMockMode, resetMockData, exportMockData, importMockData } from "@/lib/mock-mode";
+import { resetHealth } from "@/lib/api-health";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -89,6 +90,66 @@ function Perfil() {
                 }}
               >
                 <RefreshCw className="size-3.5 mr-1.5" /> Reiniciar dados mock
+              </Button>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-xl"
+                  onClick={() => {
+                    try {
+                      const json = exportMockData();
+                      const blob = new Blob([json], { type: "application/json" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `ip-mock-${new Date().toISOString().slice(0, 10)}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Cenário exportado");
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Falha ao exportar");
+                    }
+                  }}
+                >
+                  <Download className="size-3.5 mr-1.5" /> Exportar
+                </Button>
+                <label className="contents">
+                  <input
+                    type="file"
+                    accept="application/json"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const text = await file.text();
+                        importMockData(text);
+                        qc.invalidateQueries();
+                        toast.success("Cenário importado");
+                      } catch (err: any) {
+                        toast.error(err?.message ?? "JSON inválido");
+                      } finally {
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <Button asChild variant="outline" size="sm" className="h-9 rounded-xl">
+                    <span><Upload className="size-3.5 mr-1.5" /> Importar</span>
+                  </Button>
+                </label>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 h-8 rounded-lg w-full text-xs text-muted-foreground"
+                onClick={() => {
+                  resetHealth();
+                  qc.invalidateQueries();
+                  toast.success("Status da API reiniciado");
+                }}
+              >
+                Reiniciar status da API
               </Button>
             </div>
           </div>
