@@ -352,6 +352,45 @@ export function getMockData(): MockData {
   return safeRead();
 }
 
+export function getMockClassDetail(classId: string) {
+  const d = safeRead();
+  const turma = d.classes.find((c) => c.id === classId);
+  if (!turma) return null;
+  const students = d.students.filter((s) => s.class_id === classId);
+  const materials = d.materials.filter((m) => m.class_id === classId);
+  const events = d.events.filter((e) => e.class_id === classId);
+  return {
+    turma: { id: turma.id, name: turma.name, grade: turma.grade, year: turma.year },
+    students: students.map((s) => ({
+      id: s.id, full_name: s.full_name, risk: s.risk,
+      attendance_rate: s.attendance_rate, has_pei: s.has_pei,
+    })),
+    materials,
+    events,
+  };
+}
+
+export function getMockStudentDetail(studentId: string) {
+  const d = safeRead();
+  const s = d.students.find((x) => x.id === studentId);
+  if (!s) return null;
+  const suggestions = d.suggestions.filter((sg) => sg.student_id === studentId);
+  return {
+    student: {
+      id: s.id, full_name: s.full_name, risk: s.risk,
+      attendance_rate: s.attendance_rate, has_pei: s.has_pei,
+      guardian_name: s.guardian_name, guardian_phone: s.guardian_phone,
+      birth_date: s.birth_date, skills: s.skills,
+      classes: { name: s.class_name, grade: s.grade },
+    },
+    observations: s.observations.map((o) => ({
+      id: o.id, content: o.content, type: o.type,
+      created_at: o.created_at, author_name: o.author,
+    })),
+    suggestions,
+  };
+}
+
 export function resetMockData(): MockData {
   const fresh = seed();
   persist(fresh);
