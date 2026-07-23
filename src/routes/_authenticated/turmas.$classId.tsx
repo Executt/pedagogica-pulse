@@ -39,7 +39,7 @@ function TurmaDetail() {
 
   const d: any = turma.data?.data;
   const avgAttendance = d?.students.length
-    ? Math.round(d.students.reduce((s, x) => s + (Number(x.attendance_rate) || 0), 0) / d.students.length)
+    ? Math.round(d.students.reduce((s: number, x: any) => s + (Number(x.attendance_rate) || 0), 0) / d.students.length)
     : 0;
   const riskDist = {
     low: d?.students.filter((s: any) => s.risk === "low").length ?? 0,
@@ -84,7 +84,7 @@ function TurmaDetail() {
             <Link key={s.id} to="/alunos/$studentId" params={{ studentId: s.id }}>
               <Card className="p-3 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform">
                 <div className="size-11 rounded-full bg-secondary grid place-items-center text-primary font-semibold">
-                  {s.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                  {s.full_name.split(" ").map((p: string) => p[0]).slice(0, 2).join("")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{s.full_name}</p>
