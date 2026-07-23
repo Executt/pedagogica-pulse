@@ -17,7 +17,7 @@ function TurmaDetail() {
   const { classId } = Route.useParams();
   const navigate = useNavigate();
 
-  const turma = useSmartQuery({
+  const turma = useSmartQuery<any>({
     queryKey: ["class", classId],
     apiFn: async () => {
       const [c, students, materials, events] = await Promise.all([
@@ -27,17 +27,17 @@ function TurmaDetail() {
         supabase.from("events").select("*").eq("class_id", classId).order("starts_at"),
       ]);
       return {
-        turma: c.data,
-        students: students.data ?? [],
-        materials: materials.data ?? [],
-        events: events.data ?? [],
+        turma: c.data as any,
+        students: (students.data ?? []) as any[],
+        materials: (materials.data ?? []) as any[],
+        events: (events.data ?? []) as any[],
       };
     },
     mockFn: () =>
       getMockClassDetail(classId) ?? { turma: null, students: [], materials: [], events: [] },
   });
 
-  const d = turma.data?.data as any;
+  const d: any = turma.data?.data;
   const avgAttendance = d?.students.length
     ? Math.round(d.students.reduce((s, x) => s + (Number(x.attendance_rate) || 0), 0) / d.students.length)
     : 0;
