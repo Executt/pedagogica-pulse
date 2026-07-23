@@ -488,7 +488,7 @@ export type Database = {
       user_school_ids: { Args: never; Returns: string[] }
     }
     Enums: {
-      app_role: "diretor" | "pedagogo" | "professor"
+      app_role: "diretor" | "pedagogo" | "professor" | "superadmin"
       observation_type: "text" | "audio" | "image"
       risk_level: "low" | "medium" | "high"
       suggestion_status: "pending" | "applied" | "scheduled" | "discarded"
@@ -625,7 +625,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["diretor", "pedagogo", "professor"],
+      app_role: ["diretor", "pedagogo", "professor", "superadmin"],
       observation_type: ["text", "audio", "image"],
       risk_level: ["low", "medium", "high"],
       suggestion_status: ["pending", "applied", "scheduled", "discarded"],

@@ -74,7 +74,7 @@ export function getApiStatus(mockMode: boolean): ApiStatus {
 }
 
 export function getHealthSnapshot() {
-  return { ...state };
+  return state;
 }
 
 function subscribe(cb: () => void) {
