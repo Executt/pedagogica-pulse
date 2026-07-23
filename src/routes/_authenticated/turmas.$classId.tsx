@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, FileText, Calendar as CalendarIcon, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RiskBadge } from "@/components/mobile-shell";
+import { useSmartQuery } from "@/hooks/use-smart-query";
+import { getMockClassDetail } from "@/lib/mock-mode";
+import { DemoBadge } from "@/components/query-state";
 
 export const Route = createFileRoute("/_authenticated/turmas/$classId")({
   component: TurmaDetail,
@@ -15,9 +17,9 @@ function TurmaDetail() {
   const { classId } = Route.useParams();
   const navigate = useNavigate();
 
-  const turma = useQuery({
+  const turma = useSmartQuery({
     queryKey: ["class", classId],
-    queryFn: async () => {
+    apiFn: async () => {
       const [c, students, materials, events] = await Promise.all([
         supabase.from("classes").select("*").eq("id", classId).maybeSingle(),
         supabase.from("students").select("*").eq("class_id", classId).order("full_name"),
@@ -31,16 +33,18 @@ function TurmaDetail() {
         events: events.data ?? [],
       };
     },
+    mockFn: () =>
+      getMockClassDetail(classId) ?? { turma: null, students: [], materials: [], events: [] },
   });
 
-  const d = turma.data;
+  const d = turma.data?.data as any;
   const avgAttendance = d?.students.length
     ? Math.round(d.students.reduce((s, x) => s + (Number(x.attendance_rate) || 0), 0) / d.students.length)
     : 0;
   const riskDist = {
-    low: d?.students.filter((s) => s.risk === "low").length ?? 0,
-    medium: d?.students.filter((s) => s.risk === "medium").length ?? 0,
-    high: d?.students.filter((s) => s.risk === "high").length ?? 0,
+    low: d?.students.filter((s: any) => s.risk === "low").length ?? 0,
+    medium: d?.students.filter((s: any) => s.risk === "medium").length ?? 0,
+    high: d?.students.filter((s: any) => s.risk === "high").length ?? 0,
   };
 
   return (
@@ -51,6 +55,7 @@ function TurmaDetail() {
           <h1 className="font-semibold text-sm truncate">{d?.turma?.name ?? "Turma"}</h1>
           <p className="text-[11px] text-muted-foreground">{d?.turma?.grade}</p>
         </div>
+        {turma.data?.source === "mock" && <DemoBadge />}
       </header>
 
       <Tabs defaultValue="overview" className="flex-1">
@@ -75,7 +80,7 @@ function TurmaDetail() {
         </TabsContent>
 
         <TabsContent value="students" className="p-5 space-y-2">
-          {d?.students.map((s) => (
+          {d?.students.map((s: any) => (
             <Link key={s.id} to="/alunos/$studentId" params={{ studentId: s.id }}>
               <Card className="p-3 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform">
                 <div className="size-11 rounded-full bg-secondary grid place-items-center text-primary font-semibold">
@@ -97,7 +102,7 @@ function TurmaDetail() {
 
         <TabsContent value="materials" className="p-5 space-y-2">
           {d?.materials.length === 0 && <EmptyState icon={FileText} text="Nenhum material compartilhado." />}
-          {d?.materials.map((m) => (
+          {d?.materials.map((m: any) => (
             <Card key={m.id} className="p-4 rounded-2xl flex items-center gap-3">
               <div className="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><FileText className="size-4" /></div>
               <div className="flex-1 min-w-0">
@@ -110,7 +115,7 @@ function TurmaDetail() {
 
         <TabsContent value="agenda" className="p-5 space-y-2">
           {d?.events.length === 0 && <EmptyState icon={CalendarIcon} text="Nenhum evento agendado." />}
-          {d?.events.map((e) => (
+          {d?.events.map((e: any) => (
             <Card key={e.id} className="p-4 rounded-2xl">
               <p className="text-sm font-semibold">{e.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
