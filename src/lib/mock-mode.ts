@@ -67,12 +67,35 @@ export type MockClass = {
   students: { id: string; risk: "low" | "medium" | "high" }[];
 };
 
+export type MockStudent = {
+  id: string;
+  full_name: string;
+  class_id: string;
+  class_name: string;
+  grade: string;
+  risk: "low" | "medium" | "high";
+  attendance_rate: number;
+  has_pei: boolean;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  birth_date: string | null;
+  skills: { label: string; value: number }[];
+  observations: {
+    id: string;
+    content: string;
+    type: "text" | "audio" | "behavior" | "academic";
+    created_at: string;
+    author: string;
+  }[];
+};
+
 export type MockData = {
   materials: MockMaterial[];
   suggestions: MockSuggestion[];
   events: MockEvent[];
   announcements: MockAnnouncement[];
   classes: MockClass[];
+  students: MockStudent[];
   stats: {
     classCount: number;
     studentCount: number;
@@ -100,6 +123,78 @@ function seed(): MockData {
       { id: "s12", risk: "low" }, { id: "s13", risk: "low" }, { id: "s14", risk: "high" },
     ]},
   ];
+
+  const studentNames: Record<string, string> = {
+    s1: "Ana Beatriz Silva", s2: "Bruno Ferreira Costa", s3: "Camila Rocha Lima",
+    s4: "Daniel Souza Alves", s5: "Eduarda Martins Prado", s6: "Felipe Barros Nogueira",
+    s7: "Lucas Mendes", s8: "Marina Ribeiro", s9: "Nicolas Almeida",
+    s10: "Olívia Cardoso", s11: "Pedro Henrique Ramos",
+    s12: "Sofia Vasconcelos", s13: "Thiago Moreira", s14: "Rafael Nunes",
+  };
+  const guardians: Record<string, [string, string]> = {
+    s1: ["Cláudia Silva", "(11) 99812-4501"],
+    s2: ["Roberto Costa", "(11) 99777-3320"],
+    s7: ["Fernanda Mendes", "(11) 99231-8890"],
+    s14: ["Vera Nunes", "(11) 98122-7710"],
+  };
+  const obsBank: Record<string, MockStudent["observations"]> = {
+    s1: [
+      { id: "o1", type: "behavior", author: "Prof. Márcia",
+        content: "Ana chegou muito cansada hoje; disse que não dormiu bem novamente. Conversei em particular após a aula.",
+        created_at: iso(-day * 1) },
+      { id: "o2", type: "audio", author: "Coord. Rita",
+        content: "Áudio anexado da mãe relatando conflitos familiares. Acionar rede de proteção se persistir.",
+        created_at: iso(-day * 2) },
+      { id: "o3", type: "academic", author: "Prof. Márcia",
+        content: "Melhora na leitura em voz alta esta semana. Continua com dificuldade em interpretação.",
+        created_at: iso(-day * 5) },
+    ],
+    s7: [
+      { id: "o4", type: "academic", author: "Prof. João",
+        content: "Erros recorrentes em frações equivalentes na avaliação bimestral. Encaminhado para reforço.",
+        created_at: iso(-day * 2) },
+      { id: "o5", type: "behavior", author: "Prof. João",
+        content: "Muito participativo nas atividades em grupo; gosta de liderar debates.",
+        created_at: iso(-day * 6) },
+    ],
+    s14: [
+      { id: "o6", type: "academic", author: "Prof. Carla",
+        content: "Dificuldade persistente na leitura em voz alta; sugerido avaliação fonoaudiológica.",
+        created_at: iso(-day * 3) },
+    ],
+  };
+  const skillsFor = (risk: "low" | "medium" | "high") => {
+    const base = risk === "high" ? 45 : risk === "medium" ? 65 : 80;
+    const jitter = (n: number) => Math.max(20, Math.min(98, base + n));
+    return [
+      { label: "Leitura", value: jitter(6) },
+      { label: "Escrita", value: jitter(-4) },
+      { label: "Matemática", value: jitter(2) },
+      { label: "Interpretação", value: jitter(-8) },
+      { label: "Socioemocional", value: jitter(10) },
+    ];
+  };
+  const students: MockStudent[] = classes.flatMap((c) =>
+    c.students.map((st, idx): MockStudent => {
+      const [gName, gPhone] = guardians[st.id] ?? [null, null];
+      const attendance = st.risk === "high" ? 68 + idx : st.risk === "medium" ? 82 + idx : 92 + (idx % 5);
+      return {
+        id: st.id,
+        full_name: studentNames[st.id] ?? `Aluno ${st.id}`,
+        class_id: c.id,
+        class_name: c.name,
+        grade: c.grade,
+        risk: st.risk,
+        attendance_rate: Math.min(99, attendance),
+        has_pei: st.id === "s1" || st.id === "s14",
+        guardian_name: gName,
+        guardian_phone: gPhone,
+        birth_date: iso(-day * (365 * (10 + idx) + 30)),
+        skills: skillsFor(st.risk),
+        observations: obsBank[st.id] ?? [],
+      };
+    }),
+  );
 
   const materials: MockMaterial[] = [
     {
@@ -227,7 +322,7 @@ function seed(): MockData {
   const highRisk = classes.reduce((n, c) => n + c.students.filter((s) => s.risk === "high").length, 0);
 
   return {
-    materials, suggestions, events, announcements, classes,
+    materials, suggestions, events, announcements, classes, students,
     stats: { classCount: classes.length, studentCount, highRisk },
   };
 }
@@ -257,6 +352,45 @@ export function getMockData(): MockData {
   return safeRead();
 }
 
+export function getMockClassDetail(classId: string) {
+  const d = safeRead();
+  const turma = d.classes.find((c) => c.id === classId);
+  if (!turma) return null;
+  const students = d.students.filter((s) => s.class_id === classId);
+  const materials = d.materials.filter((m) => m.class_id === classId);
+  const events = d.events.filter((e) => e.class_id === classId);
+  return {
+    turma: { id: turma.id, name: turma.name, grade: turma.grade, year: turma.year },
+    students: students.map((s) => ({
+      id: s.id, full_name: s.full_name, risk: s.risk,
+      attendance_rate: s.attendance_rate, has_pei: s.has_pei,
+    })),
+    materials,
+    events,
+  };
+}
+
+export function getMockStudentDetail(studentId: string) {
+  const d = safeRead();
+  const s = d.students.find((x) => x.id === studentId);
+  if (!s) return null;
+  const suggestions = d.suggestions.filter((sg) => sg.student_id === studentId);
+  return {
+    student: {
+      id: s.id, full_name: s.full_name, risk: s.risk,
+      attendance_rate: s.attendance_rate, has_pei: s.has_pei,
+      guardian_name: s.guardian_name, guardian_phone: s.guardian_phone,
+      birth_date: s.birth_date, skills: s.skills,
+      classes: { name: s.class_name, grade: s.grade },
+    },
+    observations: s.observations.map((o) => ({
+      id: o.id, content: o.content, type: o.type,
+      created_at: o.created_at, author_name: o.author,
+    })),
+    suggestions,
+  };
+}
+
 export function resetMockData(): MockData {
   const fresh = seed();
   persist(fresh);
@@ -276,7 +410,7 @@ export function exportMockData(): string {
 export function importMockData(raw: string): MockData {
   const parsed = JSON.parse(raw) as Partial<MockData>;
   const required: (keyof MockData)[] = [
-    "materials", "suggestions", "events", "announcements", "classes", "stats",
+    "materials", "suggestions", "events", "announcements", "classes", "students", "stats",
   ];
   for (const k of required) {
     if (!(k in parsed)) throw new Error(`Campo obrigatório ausente: ${k}`);
