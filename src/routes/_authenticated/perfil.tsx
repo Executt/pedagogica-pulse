@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useMockMode, setMockMode, resetMockData, exportMockData, importMockData } from "@/lib/mock-mode";
 import { resetHealth } from "@/lib/api-health";
+import { checkPulseConnection } from "@/lib/pulse-read.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -46,6 +47,8 @@ function Perfil() {
         </Card>
 
         <RoleAssignment hasRoles={(roles.data?.length ?? 0) > 0} />
+
+        <PulseConnectionCard />
 
         {roles.data && roles.data.length > 0 && (
           <Card className="p-4 rounded-2xl">
