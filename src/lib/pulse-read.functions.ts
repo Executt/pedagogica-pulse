@@ -40,8 +40,9 @@ export const fetchPulseResource = createServerFn({ method: "POST" })
       `/api/public/pulse/${data.resource}?${params.toString()}`,
     );
     if (!res.ok) {
-      return { ok: false, unavailable: res.unavailable ?? false, error: res.error ?? null, items: [] as Record<string, unknown>[] };
+      return { ok: false, unavailable: res.unavailable ?? false, error: res.error ?? null, itemsJson: "[]" };
     }
     const items = Array.isArray(res.data) ? res.data : ((res.data as { data?: Record<string, unknown>[] })?.data ?? []);
-    return { ok: true, unavailable: false, error: null, items };
+    // Serializado como JSON para atravessar o boundary RPC com segurança.
+    return { ok: true, unavailable: false, error: null, itemsJson: JSON.stringify(items) };
   });
