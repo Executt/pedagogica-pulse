@@ -176,7 +176,6 @@ function Perfil() {
 
 function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
   const user = useCurrentUser();
-  const user = useCurrentUser();
   const qc = useQueryClient();
   const schools = useQuery({
     queryKey: ["all-schools"],
@@ -244,6 +243,58 @@ function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
         >
           {m.isPending ? "Vinculando..." : "Vincular"}
         </Button>
+      </div>
+    </Card>
+  );
+}
+
+function PulseConnectionCard() {
+  const q = useQuery({
+    queryKey: ["pulse-connection"],
+    queryFn: () => checkPulseConnection(),
+    staleTime: 60_000,
+  });
+
+  const connected = q.data?.connected === true;
+
+  return (
+    <Card className="p-4 rounded-2xl">
+      <div className="flex items-start gap-3">
+        <div className="size-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+          <Plug className="size-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Inteligência Pedagógica</p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {q.isLoading
+                  ? "Verificando conexão..."
+                  : connected
+                    ? "Conectado — envio de registros assinado (HMAC)"
+                    : (q.data?.reason ?? "Sem conexão")}
+              </p>
+            </div>
+            {q.isLoading ? (
+              <RefreshCw className="size-4 text-muted-foreground animate-spin shrink-0" />
+            ) : connected ? (
+              <CheckCircle2 className="size-4 text-primary shrink-0" />
+            ) : (
+              <XCircle className="size-4 text-destructive shrink-0" />
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Leitura de dados do sistema aguarda as rotas públicas de consulta; enquanto isso o app usa os dados locais/demo.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 h-9 rounded-xl w-full"
+            onClick={() => q.refetch()}
+          >
+            <RefreshCw className="size-3.5 mr-1.5" /> Testar conexão
+          </Button>
+        </div>
       </div>
     </Card>
   );
