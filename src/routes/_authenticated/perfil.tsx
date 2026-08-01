@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle, AlertTriangle, KeyRound, Bug, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -13,6 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import { useMockMode, setMockMode, resetMockData, exportMockData, importMockData } from "@/lib/mock-mode";
 import { resetHealth } from "@/lib/api-health";
 import { checkPulseConnection } from "@/lib/pulse-read.functions";
+import { amISuperadmin, getPulseSettings, savePulseSettings, getPulseLogs } from "@/lib/pulse-admin.functions";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { clearPersistedQueries } from "@/lib/query-persist";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -248,14 +252,31 @@ function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
   );
 }
 
+function StatusPill({ tone, label }: { tone: "ok" | "warn" | "off"; label: string }) {
+  const cls =
+    tone === "ok"
+      ? "bg-primary/10 text-primary"
+      : tone === "warn"
+        ? "bg-accent/15 text-accent"
+        : "bg-destructive/10 text-destructive";
+  return <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
+}
+
 function PulseConnectionCard() {
-  const q = useQuery({
+  const qc = useQueryClient();
+  const [diag, setDiag] = React.useState(false);
+
+  const status = useQuery({
     queryKey: ["pulse-connection"],
     queryFn: () => checkPulseConnection(),
     staleTime: 60_000,
   });
+  const su = useQuery({ queryKey: ["is-superadmin"], queryFn: () => amISuperadmin(), staleTime: 5 * 60_000 });
+  const isSuper = su.data?.superadmin === true;
 
-  const connected = q.data?.connected === true;
+  const d = status.data;
+  const writeOk = d?.connected === true;
+  const readOk = d?.readAvailable === true;
 
   return (
     <Card className="p-4 rounded-2xl">
@@ -265,37 +286,182 @@ function PulseConnectionCard() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Inteligência Pedagógica</p>
-              <p className="text-[11px] text-muted-foreground truncate">
-                {q.isLoading
-                  ? "Verificando conexão..."
-                  : connected
-                    ? "Conectado — envio de registros assinado (HMAC)"
-                    : (q.data?.reason ?? "Sem conexão")}
-              </p>
-            </div>
-            {q.isLoading ? (
+            <p className="text-sm font-semibold">Inteligência Pedagógica</p>
+            {status.isFetching ? (
               <RefreshCw className="size-4 text-muted-foreground animate-spin shrink-0" />
-            ) : connected ? (
+            ) : writeOk ? (
               <CheckCircle2 className="size-4 text-primary shrink-0" />
             ) : (
               <XCircle className="size-4 text-destructive shrink-0" />
             )}
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Leitura de dados do sistema aguarda as rotas públicas de consulta; enquanto isso o app usa os dados locais/demo.
-          </p>
+
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <StatusPill tone={writeOk ? "ok" : "off"} label={writeOk ? "Envio ativo" : "API off"} />
+            <StatusPill
+              tone={readOk ? "ok" : writeOk ? "warn" : "off"}
+              label={readOk ? "Leitura ativa" : "Leitura indisponível"}
+            />
+            {d?.tokenSource && <StatusPill tone="ok" label={d.tokenSource === "db" ? "Token: painel" : "Token: secret"} />}
+          </div>
+
+          {!readOk && (
+            <p className="mt-2 text-[11px] text-muted-foreground flex items-start gap-1.5">
+              <AlertTriangle className="size-3.5 text-accent shrink-0 mt-px" />
+              As rotas de leitura responderam {d?.status === 0 ? "sem conexão" : "404/erro"} — o app segue com os dados locais/demo.
+            </p>
+          )}
+          <p className="mt-1 text-[11px] text-muted-foreground truncate">{d?.base}</p>
+
           <Button
             variant="outline"
             size="sm"
             className="mt-3 h-9 rounded-xl w-full"
-            onClick={() => q.refetch()}
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: ["pulse-connection"] });
+              status.refetch();
+            }}
           >
             <RefreshCw className="size-3.5 mr-1.5" /> Testar conexão
           </Button>
+
+          {isSuper && <TokenEditor onSaved={() => status.refetch()} />}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 h-8 rounded-lg w-full text-xs text-muted-foreground"
+            onClick={() => setDiag((v) => !v)}
+          >
+            <Bug className="size-3.5 mr-1.5" /> {diag ? "Ocultar" : "Modo"} diagnóstico
+          </Button>
+
+          {diag && <Diagnostics status={d} />}
         </div>
       </div>
     </Card>
+  );
+}
+
+function TokenEditor({ onSaved }: { onSaved: () => void }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = React.useState(false);
+  const [token, setToken] = React.useState("");
+  const [baseUrl, setBaseUrl] = React.useState("");
+
+  const settings = useQuery({
+    queryKey: ["pulse-settings"],
+    queryFn: () => getPulseSettings(),
+    enabled: open,
+  });
+
+  const save = useMutation({
+    mutationFn: () =>
+      savePulseSettings({
+        data: {
+          ...(token.trim() ? { token: token.trim() } : {}),
+          ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}),
+        },
+      }),
+    onSuccess: (r) => {
+      if (!r.ok) {
+        toast.error(r.error ?? "Falha ao salvar");
+        return;
+      }
+      setToken("");
+      toast.success("Token atualizado — revalidando conexão...");
+      clearPersistedQueries();
+      qc.invalidateQueries({ queryKey: ["pulse-settings"] });
+      qc.invalidateQueries({ queryKey: ["pulse-connection"] });
+      qc.invalidateQueries({ queryKey: ["pulse-logs"] });
+      onSaved();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar"),
+  });
+
+  return (
+    <div className="mt-2">
+      <Button variant="outline" size="sm" className="h-9 rounded-xl w-full" onClick={() => setOpen((v) => !v)}>
+        <KeyRound className="size-3.5 mr-1.5" /> {open ? "Fechar" : "Configurar token"}
+      </Button>
+      {open && (
+        <div className="mt-2 space-y-2 rounded-xl bg-secondary/40 p-3">
+          <p className="text-[11px] text-muted-foreground">
+            Token atual: <span className="font-mono">{settings.data?.tokenMasked ?? "—"}</span>
+            {settings.data?.updatedAt && ` · alterado em ${new Date(settings.data.updatedAt).toLocaleString("pt-BR")}`}
+          </p>
+          <Input
+            type="password"
+            autoComplete="off"
+            placeholder="Novo PULSE_API_TOKEN (pulse_...)"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className="h-10 rounded-xl font-mono text-xs"
+          />
+          <Input
+            placeholder={settings.data?.baseUrl ?? "https://inteligenciapedagogica.lovable.app"}
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            className="h-10 rounded-xl text-xs"
+          />
+          <Button
+            className="w-full h-10 rounded-xl"
+            disabled={save.isPending || (!token.trim() && !baseUrl.trim())}
+            onClick={() => save.mutate()}
+          >
+            <Save className="size-3.5 mr-1.5" /> {save.isPending ? "Salvando..." : "Salvar e testar"}
+          </Button>
+          <p className="text-[10px] text-muted-foreground">
+            Guardado no backend com acesso restrito a superadmin. O app nunca expõe o valor completo.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Diagnostics({ status }: { status: any }) {
+  const logs = useQuery({ queryKey: ["pulse-logs"], queryFn: () => getPulseLogs(), staleTime: 15_000 });
+
+  return (
+    <div className="mt-2 rounded-xl bg-secondary/40 p-3 space-y-2">
+      <div className="grid grid-cols-2 gap-y-1 text-[11px]">
+        <span className="text-muted-foreground">Assinatura</span>
+        <span className="font-medium">{status?.signed ? "HMAC-SHA256 enviada" : "não enviada"}</span>
+        <span className="text-muted-foreground">Último timestamp</span>
+        <span className="font-mono truncate">{status?.ts ?? "—"}</span>
+        <span className="text-muted-foreground">Último nonce</span>
+        <span className="font-mono truncate">{status?.nonce ?? "—"}</span>
+        <span className="text-muted-foreground">HTTP</span>
+        <span className="font-mono">{status?.status ?? "—"}</span>
+        <span className="text-muted-foreground">Motivo</span>
+        <span className="font-mono break-all">{status?.reason ?? "ok"}</span>
+      </div>
+
+      <div className="pt-2 border-t border-border/60">
+        <p className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">Últimas chamadas</p>
+        {logs.isLoading && <p className="text-[11px] text-muted-foreground">Carregando...</p>}
+        {(logs.data?.logs ?? []).length === 0 && !logs.isLoading && (
+          <p className="text-[11px] text-muted-foreground">Sem registros (visível apenas para superadmin).</p>
+        )}
+        <div className="space-y-1 max-h-56 overflow-auto">
+          {(logs.data?.logs ?? []).map((l: any) => (
+            <div key={l.id} className="text-[10px] font-mono leading-tight">
+              <div className="flex items-center gap-1.5">
+                <Badge variant={l.signature_ok ? "secondary" : "destructive"} className="h-4 px-1 text-[9px]">
+                  {l.status ?? "ERR"}
+                </Badge>
+                <span className="truncate">{l.resource}</span>
+                <span className="text-muted-foreground ml-auto shrink-0">
+                  {new Date(l.created_at).toLocaleTimeString("pt-BR")}
+                </span>
+              </div>
+              {l.error && <p className="text-destructive break-all">{String(l.error).slice(0, 160)}</p>}
+              <p className="text-muted-foreground break-all">ts {l.ts_used} · nonce {String(l.nonce_used ?? "").slice(0, 8)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
