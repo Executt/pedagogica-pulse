@@ -176,6 +176,7 @@ function Perfil() {
 
 function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
   const user = useCurrentUser();
+  const user = useCurrentUser();
   const qc = useQueryClient();
   const schools = useQuery({
     queryKey: ["all-schools"],
