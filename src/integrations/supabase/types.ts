@@ -154,6 +154,33 @@ export type Database = {
           },
         ]
       }
+      configuracoes_integracao: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           class_id: string | null
@@ -217,6 +244,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      logs_integracao: {
+        Row: {
+          created_at: string
+          direction: string
+          error: string | null
+          id: string
+          method: string
+          nonce_used: string | null
+          resource: string
+          signature_ok: boolean | null
+          status: number | null
+          ts_used: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          method?: string
+          nonce_used?: string | null
+          resource: string
+          signature_ok?: boolean | null
+          status?: number | null
+          ts_used?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          method?: string
+          nonce_used?: string | null
+          resource?: string
+          signature_ok?: boolean | null
+          status?: number | null
+          ts_used?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       materials: {
         Row: {
@@ -477,6 +546,7 @@ export type Database = {
     }
     Functions: {
       has_school_access: { Args: { _school_id: string }; Returns: boolean }
+      is_superadmin: { Args: { _user_id?: string }; Returns: boolean }
       list_all_schools: {
         Args: never
         Returns: {
