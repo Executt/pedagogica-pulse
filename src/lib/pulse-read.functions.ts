@@ -36,12 +36,12 @@ export const fetchPulseResource = createServerFn({ method: "POST" })
     const params = new URLSearchParams();
     if (data.schoolId) params.set("school_id", data.schoolId);
     params.set("limit", String(data.limit ?? 100));
-    const res = await pulseFetch<{ data?: unknown[] } | unknown[]>(
+    const res = await pulseFetch<{ data?: Record<string, unknown>[] } | Record<string, unknown>[]>(
       `/api/public/pulse/${data.resource}?${params.toString()}`,
     );
     if (!res.ok) {
-      return { ok: false, unavailable: res.unavailable ?? false, error: res.error ?? null, items: [] as unknown[] };
+      return { ok: false, unavailable: res.unavailable ?? false, error: res.error ?? null, items: [] as Record<string, unknown>[] };
     }
-    const items = Array.isArray(res.data) ? res.data : ((res.data as { data?: unknown[] })?.data ?? []);
+    const items = Array.isArray(res.data) ? res.data : ((res.data as { data?: Record<string, unknown>[] })?.data ?? []);
     return { ok: true, unavailable: false, error: null, items };
   });
