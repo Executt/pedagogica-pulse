@@ -27,9 +27,9 @@ export const syncMaterialToPulse = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!material) throw new Error("Registro não encontrado");
 
-    const url = process.env.PULSE_INGEST_URL;
-    const token = process.env.PULSE_INGEST_TOKEN;
-    if (!url || !token) {
+    const { pulseFetch, pulseConfig } = await import("@/lib/pulse.server");
+    const { token } = pulseConfig();
+    if (!token) {
       return { ok: false, reason: "missing_config" as const };
     }
 
@@ -66,18 +66,13 @@ export const syncMaterialToPulse = createServerFn({ method: "POST" })
     };
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await pulseFetch<{ id?: string; external_id?: string }>(
+        "/api/public/pulse/ingest",
+        { method: "POST", body: payload },
+      );
 
       if (!res.ok) {
-        const body = await res.text();
-        const errMsg = `Ingest ${res.status}: ${body.slice(0, 300)}`;
+        const errMsg = `Ingest ${res.status}: ${res.error ?? "erro"}`;
         await supabase
           .from("materials")
           .update({ sync_error: errMsg, synced_at: null })
@@ -85,13 +80,7 @@ export const syncMaterialToPulse = createServerFn({ method: "POST" })
         return { ok: false, status: res.status, error: errMsg };
       }
 
-      let external_id: string | null = null;
-      try {
-        const json = (await res.json()) as { id?: string; external_id?: string };
-        external_id = json.external_id ?? json.id ?? null;
-      } catch {
-        /* endpoint pode não retornar JSON */
-      }
+      const external_id = res.data?.external_id ?? res.data?.id ?? null;
 
       await supabase
         .from("materials")
