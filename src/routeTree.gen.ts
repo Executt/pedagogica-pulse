@@ -22,6 +22,13 @@ import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
+import { Route as ApiPublicPulseTurmasRouteImport } from './routes/api/public/pulse/turmas'
+import { Route as ApiPublicPulseSugestoesRouteImport } from './routes/api/public/pulse/sugestoes'
+import { Route as ApiPublicPulseRegistrosRouteImport } from './routes/api/public/pulse/registros'
+import { Route as ApiPublicPulseObservacoesRouteImport } from './routes/api/public/pulse/observacoes'
+import { Route as ApiPublicPulseEscolasRouteImport } from './routes/api/public/pulse/escolas'
+import { Route as ApiPublicPulseAlunosRouteImport } from './routes/api/public/pulse/alunos'
+import { Route as ApiPublicPulseAgendaRouteImport } from './routes/api/public/pulse/agenda'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -91,6 +98,42 @@ const AuthenticatedAlunosStudentIdRoute =
     path: '/alunos/$studentId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicPulseTurmasRoute = ApiPublicPulseTurmasRouteImport.update({
+  id: '/api/public/pulse/turmas',
+  path: '/api/public/pulse/turmas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPulseSugestoesRoute = ApiPublicPulseSugestoesRouteImport.update({
+  id: '/api/public/pulse/sugestoes',
+  path: '/api/public/pulse/sugestoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPulseRegistrosRoute = ApiPublicPulseRegistrosRouteImport.update({
+  id: '/api/public/pulse/registros',
+  path: '/api/public/pulse/registros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPulseObservacoesRoute =
+  ApiPublicPulseObservacoesRouteImport.update({
+    id: '/api/public/pulse/observacoes',
+    path: '/api/public/pulse/observacoes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPulseEscolasRoute = ApiPublicPulseEscolasRouteImport.update({
+  id: '/api/public/pulse/escolas',
+  path: '/api/public/pulse/escolas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPulseAlunosRoute = ApiPublicPulseAlunosRouteImport.update({
+  id: '/api/public/pulse/alunos',
+  path: '/api/public/pulse/alunos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPulseAgendaRoute = ApiPublicPulseAgendaRouteImport.update({
+  id: '/api/public/pulse/agenda',
+  path: '/api/public/pulse/agenda',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,6 +148,13 @@ export interface FileRoutesByFullPath {
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas/': typeof AuthenticatedTurmasIndexRoute
+  '/api/public/pulse/agenda': typeof ApiPublicPulseAgendaRoute
+  '/api/public/pulse/alunos': typeof ApiPublicPulseAlunosRoute
+  '/api/public/pulse/escolas': typeof ApiPublicPulseEscolasRoute
+  '/api/public/pulse/observacoes': typeof ApiPublicPulseObservacoesRoute
+  '/api/public/pulse/registros': typeof ApiPublicPulseRegistrosRoute
+  '/api/public/pulse/sugestoes': typeof ApiPublicPulseSugestoesRoute
+  '/api/public/pulse/turmas': typeof ApiPublicPulseTurmasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +168,13 @@ export interface FileRoutesByTo {
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas': typeof AuthenticatedTurmasIndexRoute
+  '/api/public/pulse/agenda': typeof ApiPublicPulseAgendaRoute
+  '/api/public/pulse/alunos': typeof ApiPublicPulseAlunosRoute
+  '/api/public/pulse/escolas': typeof ApiPublicPulseEscolasRoute
+  '/api/public/pulse/observacoes': typeof ApiPublicPulseObservacoesRoute
+  '/api/public/pulse/registros': typeof ApiPublicPulseRegistrosRoute
+  '/api/public/pulse/sugestoes': typeof ApiPublicPulseSugestoesRoute
+  '/api/public/pulse/turmas': typeof ApiPublicPulseTurmasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +191,13 @@ export interface FileRoutesById {
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/_authenticated/turmas/': typeof AuthenticatedTurmasIndexRoute
+  '/api/public/pulse/agenda': typeof ApiPublicPulseAgendaRoute
+  '/api/public/pulse/alunos': typeof ApiPublicPulseAlunosRoute
+  '/api/public/pulse/escolas': typeof ApiPublicPulseEscolasRoute
+  '/api/public/pulse/observacoes': typeof ApiPublicPulseObservacoesRoute
+  '/api/public/pulse/registros': typeof ApiPublicPulseRegistrosRoute
+  '/api/public/pulse/sugestoes': typeof ApiPublicPulseSugestoesRoute
+  '/api/public/pulse/turmas': typeof ApiPublicPulseTurmasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,6 +214,13 @@ export interface FileRouteTypes {
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas/'
+    | '/api/public/pulse/agenda'
+    | '/api/public/pulse/alunos'
+    | '/api/public/pulse/escolas'
+    | '/api/public/pulse/observacoes'
+    | '/api/public/pulse/registros'
+    | '/api/public/pulse/sugestoes'
+    | '/api/public/pulse/turmas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -163,6 +234,13 @@ export interface FileRouteTypes {
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas'
+    | '/api/public/pulse/agenda'
+    | '/api/public/pulse/alunos'
+    | '/api/public/pulse/escolas'
+    | '/api/public/pulse/observacoes'
+    | '/api/public/pulse/registros'
+    | '/api/public/pulse/sugestoes'
+    | '/api/public/pulse/turmas'
   id:
     | '__root__'
     | '/'
@@ -178,12 +256,26 @@ export interface FileRouteTypes {
     | '/_authenticated/alunos/$studentId'
     | '/_authenticated/turmas/$classId'
     | '/_authenticated/turmas/'
+    | '/api/public/pulse/agenda'
+    | '/api/public/pulse/alunos'
+    | '/api/public/pulse/escolas'
+    | '/api/public/pulse/observacoes'
+    | '/api/public/pulse/registros'
+    | '/api/public/pulse/sugestoes'
+    | '/api/public/pulse/turmas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicPulseAgendaRoute: typeof ApiPublicPulseAgendaRoute
+  ApiPublicPulseAlunosRoute: typeof ApiPublicPulseAlunosRoute
+  ApiPublicPulseEscolasRoute: typeof ApiPublicPulseEscolasRoute
+  ApiPublicPulseObservacoesRoute: typeof ApiPublicPulseObservacoesRoute
+  ApiPublicPulseRegistrosRoute: typeof ApiPublicPulseRegistrosRoute
+  ApiPublicPulseSugestoesRoute: typeof ApiPublicPulseSugestoesRoute
+  ApiPublicPulseTurmasRoute: typeof ApiPublicPulseTurmasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -279,6 +371,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlunosStudentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/pulse/turmas': {
+      id: '/api/public/pulse/turmas'
+      path: '/api/public/pulse/turmas'
+      fullPath: '/api/public/pulse/turmas'
+      preLoaderRoute: typeof ApiPublicPulseTurmasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/sugestoes': {
+      id: '/api/public/pulse/sugestoes'
+      path: '/api/public/pulse/sugestoes'
+      fullPath: '/api/public/pulse/sugestoes'
+      preLoaderRoute: typeof ApiPublicPulseSugestoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/registros': {
+      id: '/api/public/pulse/registros'
+      path: '/api/public/pulse/registros'
+      fullPath: '/api/public/pulse/registros'
+      preLoaderRoute: typeof ApiPublicPulseRegistrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/observacoes': {
+      id: '/api/public/pulse/observacoes'
+      path: '/api/public/pulse/observacoes'
+      fullPath: '/api/public/pulse/observacoes'
+      preLoaderRoute: typeof ApiPublicPulseObservacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/escolas': {
+      id: '/api/public/pulse/escolas'
+      path: '/api/public/pulse/escolas'
+      fullPath: '/api/public/pulse/escolas'
+      preLoaderRoute: typeof ApiPublicPulseEscolasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/alunos': {
+      id: '/api/public/pulse/alunos'
+      path: '/api/public/pulse/alunos'
+      fullPath: '/api/public/pulse/alunos'
+      preLoaderRoute: typeof ApiPublicPulseAlunosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pulse/agenda': {
+      id: '/api/public/pulse/agenda'
+      path: '/api/public/pulse/agenda'
+      fullPath: '/api/public/pulse/agenda'
+      preLoaderRoute: typeof ApiPublicPulseAgendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -324,6 +465,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicPulseAgendaRoute: ApiPublicPulseAgendaRoute,
+  ApiPublicPulseAlunosRoute: ApiPublicPulseAlunosRoute,
+  ApiPublicPulseEscolasRoute: ApiPublicPulseEscolasRoute,
+  ApiPublicPulseObservacoesRoute: ApiPublicPulseObservacoesRoute,
+  ApiPublicPulseRegistrosRoute: ApiPublicPulseRegistrosRoute,
+  ApiPublicPulseSugestoesRoute: ApiPublicPulseSugestoesRoute,
+  ApiPublicPulseTurmasRoute: ApiPublicPulseTurmasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
