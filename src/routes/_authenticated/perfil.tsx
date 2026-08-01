@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useMockMode, setMockMode, resetMockData, exportMockData, importMockData } from "@/lib/mock-mode";
 import { resetHealth } from "@/lib/api-health";
+import { checkPulseConnection } from "@/lib/pulse-read.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -46,6 +47,8 @@ function Perfil() {
         </Card>
 
         <RoleAssignment hasRoles={(roles.data?.length ?? 0) > 0} />
+
+        <PulseConnectionCard />
 
         {roles.data && roles.data.length > 0 && (
           <Card className="p-4 rounded-2xl">
@@ -240,6 +243,58 @@ function RoleAssignment({ hasRoles }: { hasRoles: boolean }) {
         >
           {m.isPending ? "Vinculando..." : "Vincular"}
         </Button>
+      </div>
+    </Card>
+  );
+}
+
+function PulseConnectionCard() {
+  const q = useQuery({
+    queryKey: ["pulse-connection"],
+    queryFn: () => checkPulseConnection(),
+    staleTime: 60_000,
+  });
+
+  const connected = q.data?.connected === true;
+
+  return (
+    <Card className="p-4 rounded-2xl">
+      <div className="flex items-start gap-3">
+        <div className="size-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+          <Plug className="size-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Inteligência Pedagógica</p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {q.isLoading
+                  ? "Verificando conexão..."
+                  : connected
+                    ? "Conectado — envio de registros assinado (HMAC)"
+                    : (q.data?.reason ?? "Sem conexão")}
+              </p>
+            </div>
+            {q.isLoading ? (
+              <RefreshCw className="size-4 text-muted-foreground animate-spin shrink-0" />
+            ) : connected ? (
+              <CheckCircle2 className="size-4 text-primary shrink-0" />
+            ) : (
+              <XCircle className="size-4 text-destructive shrink-0" />
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Leitura de dados do sistema aguarda as rotas públicas de consulta; enquanto isso o app usa os dados locais/demo.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 h-9 rounded-xl w-full"
+            onClick={() => q.refetch()}
+          >
+            <RefreshCw className="size-3.5 mr-1.5" /> Testar conexão
+          </Button>
+        </div>
       </div>
     </Card>
   );
