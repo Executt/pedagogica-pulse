@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, ChevronRight, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { MobileShell } from "@/components/mobile-shell";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useSmartQuery } from "@/hooks/use-smart-query";
+import { useClasses } from "@/hooks/use-education";
+import { classHeadcount, countHighRisk } from "@/domain/education/rules";
 import { usePaginated } from "@/hooks/use-paginated";
 import { ErrorRetry, LoadMore, DemoBadge } from "@/components/query-state";
-import { getMockData } from "@/lib/mock-mode";
 
 export const Route = createFileRoute("/_authenticated/turmas/")({
   component: TurmasList,
@@ -16,20 +15,9 @@ export const Route = createFileRoute("/_authenticated/turmas/")({
 
 function TurmasList() {
   const [q, setQ] = useState("");
-  const classes = useSmartQuery<any[]>({
-    queryKey: ["classes"],
-    apiFn: async () => {
-      const { data, error } = await supabase
-        .from("classes")
-        .select("id, name, grade, year, students(id, risk)")
-        .order("name");
-      if (error) throw error;
-      return data ?? [];
-    },
-    mockFn: () => getMockData().classes,
-  });
+  const classes = useClasses();
   const items = classes.data?.data ?? [];
-  const filtered = items.filter((c: any) =>
+  const filtered = items.filter((c) =>
     (c.name + " " + c.grade).toLowerCase().includes(q.toLowerCase()),
   );
   const page = usePaginated(filtered, 12);
@@ -53,9 +41,9 @@ function TurmasList() {
           {filtered.length === 0 && !classes.isLoading && !classes.isError && (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhuma turma encontrada.</p>
           )}
-          {page.visible.map((c: any) => {
-            const total = c.students?.length ?? 0;
-            const highRisk = (c.students ?? []).filter((s: any) => s.risk === "high").length;
+          {page.visible.map((c) => {
+            const total = classHeadcount(c);
+            const highRisk = countHighRisk(c.students ?? []);
             return (
               <Link key={c.id} to="/turmas/$classId" params={{ classId: c.id }}>
                 <Card className="p-4 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform">

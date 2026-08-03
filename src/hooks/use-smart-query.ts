@@ -20,7 +20,7 @@ const DEFAULT_REFETCH_MS = 3 * 60_000;
 export function useSmartQuery<T>(opts: {
   queryKey: unknown[];
   apiFn: () => Promise<T>;
-  mockFn: () => T;
+  mockFn: () => T | Promise<T>;
   enabled?: boolean;
   refetchIntervalMs?: number;
   extra?: Omit<UseQueryOptions<{ data: T; source: QuerySource }>, "queryKey" | "queryFn">;
@@ -34,9 +34,9 @@ export function useSmartQuery<T>(opts: {
     refetchInterval: mock ? false : (opts.refetchIntervalMs ?? DEFAULT_REFETCH_MS),
     refetchIntervalInBackground: false,
     queryFn: async () => {
-      if (mock) return { data: opts.mockFn(), source: "mock" as const };
+      if (mock) return { data: await opts.mockFn(), source: "mock" as const };
       if (inCooldown()) {
-        return { data: opts.mockFn(), source: "fallback" as const };
+        return { data: await opts.mockFn(), source: "fallback" as const };
       }
       try {
         const data = await opts.apiFn();
@@ -45,7 +45,7 @@ export function useSmartQuery<T>(opts: {
       } catch (err) {
         recordFailure(err);
         console.warn("[smart-query] API failed, fallback to mock:", err);
-        return { data: opts.mockFn(), source: "fallback" as const };
+        return { data: await opts.mockFn(), source: "fallback" as const };
       }
     },
     ...(opts.extra ?? {}),

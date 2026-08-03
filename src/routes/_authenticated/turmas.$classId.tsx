@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight, FileText, Calendar as CalendarIcon, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RiskBadge } from "@/components/mobile-shell";
-import { useSmartQuery } from "@/hooks/use-smart-query";
-import { getMockClassDetail } from "@/lib/mock-mode";
+import { useClassDetail } from "@/hooks/use-education";
+import { averageAttendance, riskDistribution } from "@/domain/education/rules";
 import { DemoBadge } from "@/components/query-state";
 
 export const Route = createFileRoute("/_authenticated/turmas/$classId")({
@@ -17,35 +16,11 @@ function TurmaDetail() {
   const { classId } = Route.useParams();
   const navigate = useNavigate();
 
-  const turma = useSmartQuery<any>({
-    queryKey: ["class", classId],
-    apiFn: async () => {
-      const [c, students, materials, events] = await Promise.all([
-        supabase.from("classes").select("*").eq("id", classId).maybeSingle(),
-        supabase.from("students").select("*").eq("class_id", classId).order("full_name"),
-        supabase.from("materials").select("*").eq("class_id", classId).order("created_at", { ascending: false }),
-        supabase.from("events").select("*").eq("class_id", classId).order("starts_at"),
-      ]);
-      return {
-        turma: c.data as any,
-        students: (students.data ?? []) as any[],
-        materials: (materials.data ?? []) as any[],
-        events: (events.data ?? []) as any[],
-      };
-    },
-    mockFn: () =>
-      getMockClassDetail(classId) ?? { turma: null, students: [], materials: [], events: [] },
-  });
+  const turma = useClassDetail(classId);
 
   const d: any = turma.data?.data;
-  const avgAttendance = d?.students.length
-    ? Math.round(d.students.reduce((s: number, x: any) => s + (Number(x.attendance_rate) || 0), 0) / d.students.length)
-    : 0;
-  const riskDist = {
-    low: d?.students.filter((s: any) => s.risk === "low").length ?? 0,
-    medium: d?.students.filter((s: any) => s.risk === "medium").length ?? 0,
-    high: d?.students.filter((s: any) => s.risk === "high").length ?? 0,
-  };
+  const avgAttendance = averageAttendance(d?.students ?? []);
+  const riskDist = riskDistribution(d?.students ?? []);
 
   return (
     <div className="app-shell flex flex-col">

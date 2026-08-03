@@ -14,7 +14,9 @@ export function startQueryPersistence(queryClient: QueryClient) {
   started = true;
   try {
     persistQueryClient({
-      queryClient,
+      // Duas cópias de @tanstack/query-core podem coexistir no lockfile;
+      // o cast evita conflito nominal de tipos entre elas.
+      queryClient: queryClient as unknown as Parameters<typeof persistQueryClient>[0]["queryClient"],
       maxAge: MAX_AGE,
       buster: "v1",
       persister: createSyncStoragePersister({ storage: window.localStorage, key: KEY, throttleTime: 1000 }),

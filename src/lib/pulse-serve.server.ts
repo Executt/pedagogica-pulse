@@ -48,7 +48,19 @@ export async function servePulseResource(resource: PulseResource, request: Reque
   const cfg = SELECT[resource];
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  let q = supabaseAdmin.from(cfg.table).select(cfg.columns).limit(limit);
+  // As tabelas/colunas são resolvidas dinamicamente pelo mapa SELECT acima,
+  // então usamos um cliente com tipagem relaxada apenas nesta consulta.
+  type LooseQuery = {
+    select: (c: string) => LooseQuery;
+    limit: (n: number) => LooseQuery;
+    order: (c: string, o: { ascending: boolean }) => LooseQuery;
+    eq: (c: string, v: string) => LooseQuery;
+    gte: (c: string, v: string) => LooseQuery;
+    then: Promise<{ data: unknown[] | null; error: { message: string } | null }>["then"];
+  };
+  const db = supabaseAdmin as unknown as { from: (table: string) => LooseQuery };
+
+  let q = db.from(cfg.table).select(cfg.columns).limit(limit);
   q = q.order(cfg.order, { ascending: cfg.ascending ?? false });
   if (schoolId && ["schools", "classes", "materials", "events", "ai_suggestions"].includes(cfg.table)) {
     q = cfg.table === "schools" ? q.eq("id", schoolId) : q.eq("school_id", schoolId);
@@ -67,7 +79,7 @@ export async function servePulseResource(resource: PulseResource, request: Reque
   const items = data ?? [];
   // ETag simples: permite ao cliente pular atualização quando nada mudou.
   const latest = items.reduce<string>((acc, row) => {
-    const v = (row as Record<string, unknown>)["created_at"];
+    const v = (row as unknown as Record<string, unknown>)["created_at"];
     return typeof v === "string" && v > acc ? v : acc;
   }, "");
   const etag = `W/"${resource}-${items.length}-${latest}"`;
