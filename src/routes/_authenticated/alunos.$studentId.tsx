@@ -10,8 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RiskBadge } from "@/components/mobile-shell";
-import { useSmartQuery } from "@/hooks/use-smart-query";
-import { getMockStudentDetail } from "@/lib/mock-mode";
+import { useStudentDetail } from "@/hooks/use-education";
 import { DemoBadge } from "@/components/query-state";
 
 export const Route = createFileRoute("/_authenticated/alunos/$studentId")({
@@ -22,19 +21,7 @@ function AlunoDetail() {
   const { studentId } = Route.useParams();
   const navigate = useNavigate();
 
-  const q = useSmartQuery<any>({
-    queryKey: ["student", studentId],
-    apiFn: async () => {
-      const [s, obs, sug] = await Promise.all([
-        supabase.from("students").select("*, classes(name, grade)").eq("id", studentId).maybeSingle(),
-        supabase.from("observations").select("*").eq("student_id", studentId).order("created_at", { ascending: false }),
-        supabase.from("ai_suggestions").select("*").eq("student_id", studentId).order("created_at", { ascending: false }),
-      ]);
-      return { student: s.data, observations: obs.data ?? [], suggestions: sug.data ?? [] };
-    },
-    mockFn: () =>
-      getMockStudentDetail(studentId) ?? { student: null, observations: [], suggestions: [] },
-  });
+  const q = useStudentDetail(studentId);
 
   const d: any = q.data?.data;
   const s = d?.student;
