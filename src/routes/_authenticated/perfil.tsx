@@ -264,6 +264,22 @@ function StatusPill({ tone, label }: { tone: "ok" | "warn" | "off"; label: strin
 }
 
 function PulseConnectionCard() {
+  return <PulseConnectionCardInner />;
+}
+
+function AdminImportLink() {
+  const rbac = useRbac();
+  if (!rbac.can("school:import")) return null;
+  return (
+    <Link to="/admin/importador" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+      <Building2 className="size-4 text-primary" />
+      <span className="flex-1 text-sm font-medium">Importador de escolas (PDF)</span>
+      <ChevronRight className="size-4 text-muted-foreground" />
+    </Link>
+  );
+}
+
+function PulseConnectionCardInner() {
   const qc = useQueryClient();
   const [diag, setDiag] = React.useState(false);
 
