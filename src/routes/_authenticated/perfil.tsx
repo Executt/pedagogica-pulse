@@ -168,6 +168,7 @@ function Perfil() {
             <span className="flex-1 text-sm font-medium">Mural de comunicados</span>
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
+          <AdminImportLink />
         </Card>
 
         <Button onClick={signOut} variant="ghost" className="w-full h-11 rounded-xl text-destructive hover:text-destructive">
