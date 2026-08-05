@@ -45,7 +45,8 @@ const SCHOOL_PREFIX =
   /^(EMEF|EMEI|EMEIF|EEF|EE|CEI|CMEI|CRECHE|ESCOLA|COLEGIO|COLÉGIO|CENTRO EDUCACIONAL|UNIDADE ESCOLAR)\b/i;
 const RE_INEP = /\b(\d{8})\b/;
 const RE_CNPJ = /\b(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})\b/;
-const RE_CEP = /\b(\d{5}-?\d{3})\b/;
+const RE_CEP_LABELED = /\bCEP\s*:?\s*(\d{5}-?\d{3})\b/i;
+const RE_CEP = /\b(\d{5}-\d{3})\b/;
 const RE_PHONE = /\(?\b(\d{2})\)?\s?(9?\d{4})-?(\d{4})\b/;
 const RE_EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/;
 const RE_CAPACITY = /\b(?:capacidade|vagas)\s*:?\s*(\d{2,5})\b/i;
@@ -168,7 +169,7 @@ export function parseSchoolsFromText(text: string): ParseResult {
 
     const inep = joined.match(RE_INEP)?.[1] ?? null;
     const cnpjRaw = joined.match(RE_CNPJ)?.[1] ?? null;
-    const cep = joined.match(RE_CEP)?.[1] ?? null;
+    const cep = joined.match(RE_CEP_LABELED)?.[1] ?? joined.match(RE_CEP)?.[1] ?? null;
     const phoneMatch = joined.match(RE_PHONE);
     const addressLine =
       block.lines.slice(1).find((l) => /\b(rua|av\.?|avenida|travessa|estrada|rodovia|praça|praca)\b/i.test(l)) ??
@@ -210,6 +211,9 @@ export function parseSchoolsFromText(text: string): ParseResult {
 
     if (c.cnpj && !isValidCnpj(c.cnpj))
       issues.push({ field: "cnpj", message: "CNPJ com dígito verificador inválido.", severity: "erro" });
+
+    if (!c.cnpj)
+      issues.push({ field: "cnpj", message: "CNPJ não encontrado no bloco.", severity: "aviso" });
 
     if (!c.orgUnitName)
       issues.push({ field: "org_unit", message: "Sem regional/distrito identificado no PDF.", severity: "aviso" });
