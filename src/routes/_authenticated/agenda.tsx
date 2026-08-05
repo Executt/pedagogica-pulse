@@ -92,11 +92,12 @@ function NewEventSheet() {
 
   const m = useMutation({
     mutationFn: async () => {
-      if (!user || !roles.data?.[0]) throw new Error("Sem escola vinculada");
+      const schoolId = roles.data?.find((r) => r.school_id)?.school_id;
+      if (!user || !schoolId) throw new Error("Sem escola vinculada");
       const { error } = await supabase.from("events").insert({
         title, description, location,
         starts_at: new Date(when).toISOString(),
-        school_id: roles.data[0].school_id,
+        school_id: schoolId,
         creator_id: user.id,
       });
       if (error) throw error;

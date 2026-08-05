@@ -413,6 +413,50 @@ export type Database = {
           },
         ]
       }
+      org_units: {
+        Row: {
+          active: boolean
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          short_name: string | null
+          type: Database["public"]["Enums"]["org_unit_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          short_name?: string | null
+          type: Database["public"]["Enums"]["org_unit_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          short_name?: string | null
+          type?: Database["public"]["Enums"]["org_unit_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_units_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -439,24 +483,80 @@ export type Database = {
       }
       schools: {
         Row: {
+          active: boolean
+          address: string | null
+          capacity: number | null
           city: string | null
+          cnpj: string | null
           created_at: string
+          district: string | null
+          email: string | null
           id: string
+          inep_code: string | null
+          latitude: number | null
+          longitude: number | null
+          modalities: string[]
           name: string
+          org_unit_id: string | null
+          phone: string | null
+          postal_code: string | null
+          shifts: string[]
+          state: string | null
+          updated_at: string
         }
         Insert: {
+          active?: boolean
+          address?: string | null
+          capacity?: number | null
           city?: string | null
+          cnpj?: string | null
           created_at?: string
+          district?: string | null
+          email?: string | null
           id?: string
+          inep_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          modalities?: string[]
           name: string
+          org_unit_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          shifts?: string[]
+          state?: string | null
+          updated_at?: string
         }
         Update: {
+          active?: boolean
+          address?: string | null
+          capacity?: number | null
           city?: string | null
+          cnpj?: string | null
           created_at?: string
+          district?: string | null
+          email?: string | null
           id?: string
+          inep_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          modalities?: string[]
           name?: string
+          org_unit_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          shifts?: string[]
+          state?: string | null
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "schools_org_unit_id_fkey"
+            columns: ["org_unit_id"]
+            isOneToOne: false
+            referencedRelation: "org_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -512,25 +612,35 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          org_unit_id: string | null
           role: Database["public"]["Enums"]["app_role"]
-          school_id: string
+          school_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          org_unit_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
-          school_id: string
+          school_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          org_unit_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
-          school_id?: string
+          school_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_roles_org_unit_id_fkey"
+            columns: ["org_unit_id"]
+            isOneToOne: false
+            referencedRelation: "org_units"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_roles_school_id_fkey"
             columns: ["school_id"]
@@ -545,6 +655,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_org_unit_access: { Args: { _org_unit_id: string }; Returns: boolean }
       has_school_access: { Args: { _school_id: string }; Returns: boolean }
       is_superadmin: { Args: { _user_id?: string }; Returns: boolean }
       list_all_schools: {
@@ -555,11 +666,23 @@ export type Database = {
           name: string
         }[]
       }
+      user_org_unit_ids: { Args: never; Returns: string[] }
       user_school_ids: { Args: never; Returns: string[] }
+      user_scope_school_ids: { Args: never; Returns: string[] }
     }
     Enums: {
-      app_role: "diretor" | "pedagogo" | "professor" | "superadmin"
+      app_role:
+        | "diretor"
+        | "pedagogo"
+        | "professor"
+        | "superadmin"
+        | "secretario"
+        | "subsecretario"
+        | "gestor_regional"
+        | "gestor_distrital"
+        | "coordenador"
       observation_type: "text" | "audio" | "image"
+      org_unit_type: "secretaria" | "subsecretaria" | "regional" | "distrito"
       risk_level: "low" | "medium" | "high"
       suggestion_status: "pending" | "applied" | "scheduled" | "discarded"
       suggestion_type:
@@ -695,8 +818,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["diretor", "pedagogo", "professor", "superadmin"],
+      app_role: [
+        "diretor",
+        "pedagogo",
+        "professor",
+        "superadmin",
+        "secretario",
+        "subsecretario",
+        "gestor_regional",
+        "gestor_distrital",
+        "coordenador",
+      ],
       observation_type: ["text", "audio", "image"],
+      org_unit_type: ["secretaria", "subsecretaria", "regional", "distrito"],
       risk_level: ["low", "medium", "high"],
       suggestion_status: ["pending", "applied", "scheduled", "discarded"],
       suggestion_type: [
