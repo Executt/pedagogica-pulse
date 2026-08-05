@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle, AlertTriangle, KeyRound, Bug, Save } from "lucide-react";
+import { LogOut, Megaphone, ChevronRight, School, GraduationCap, Database, RefreshCw, Download, Upload, Plug, CheckCircle2, XCircle, AlertTriangle, KeyRound, Bug, Save, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, useMyProfile, useMyRoles } from "@/hooks/use-current-user";
@@ -17,6 +17,7 @@ import { amISuperadmin, getPulseSettings, savePulseSettings, getPulseLogs } from
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { clearPersistedQueries } from "@/lib/query-persist";
+import { useRbac } from "@/hooks/use-org";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
