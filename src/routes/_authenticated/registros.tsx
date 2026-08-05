@@ -317,7 +317,10 @@ function UploadSheet({ onDone }: { onDone: () => void }) {
   const [rangeStart, setRangeStart] = useState<string>(() => defaultLocalNow(-30));
   const [rangeEnd, setRangeEnd] = useState<string>(() => defaultLocalNow(0));
 
-  const schools = roles.data?.map((r) => ({ id: r.school_id, name: r.schools?.name ?? "Escola" })) ?? [];
+  const schools =
+    roles.data
+      ?.filter((r): r is typeof r & { school_id: string } => Boolean(r.school_id))
+      .map((r) => ({ id: r.school_id, name: r.schools?.name ?? "Escola" })) ?? [];
   const effectiveSchool = schoolId || schools[0]?.id || "";
 
   const classes = useQuery({

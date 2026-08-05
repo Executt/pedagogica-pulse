@@ -17,7 +17,9 @@ function HomePage() {
   const profile = useMyProfile();
   const roles = useMyRoles();
   const mock = useMockMode();
-  const schoolIds = roles.data?.map((r) => r.school_id) ?? [];
+  const schoolIds = (roles.data ?? [])
+    .map((r) => r.school_id)
+    .filter((id): id is string => Boolean(id));
 
   const stats = useSmartQuery({
     queryKey: ["dashboard-stats", schoolIds],

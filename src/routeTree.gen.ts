@@ -22,6 +22,7 @@ import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenticated/turmas.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
+import { Route as AuthenticatedAdminImportadorRouteImport } from './routes/_authenticated/admin.importador'
 import { Route as ApiPublicPulseTurmasRouteImport } from './routes/api/public/pulse/turmas'
 import { Route as ApiPublicPulseSugestoesRouteImport } from './routes/api/public/pulse/sugestoes'
 import { Route as ApiPublicPulseRegistrosRouteImport } from './routes/api/public/pulse/registros'
@@ -98,6 +99,12 @@ const AuthenticatedAlunosStudentIdRoute =
     path: '/alunos/$studentId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminImportadorRoute =
+  AuthenticatedAdminImportadorRouteImport.update({
+    id: '/admin/importador',
+    path: '/admin/importador',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicPulseTurmasRoute = ApiPublicPulseTurmasRouteImport.update({
   id: '/api/public/pulse/turmas',
   path: '/api/public/pulse/turmas',
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/registros': typeof AuthenticatedRegistrosRoute
   '/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas/': typeof AuthenticatedTurmasIndexRoute
@@ -165,6 +173,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/registros': typeof AuthenticatedRegistrosRoute
+  '/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/turmas': typeof AuthenticatedTurmasIndexRoute
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/registros': typeof AuthenticatedRegistrosRoute
   '/_authenticated/turmas': typeof AuthenticatedTurmasRouteWithChildren
+  '/_authenticated/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/_authenticated/turmas/': typeof AuthenticatedTurmasIndexRoute
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/registros'
     | '/turmas'
+    | '/admin/importador'
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas/'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/perfil'
     | '/registros'
+    | '/admin/importador'
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/turmas'
@@ -253,6 +265,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil'
     | '/_authenticated/registros'
     | '/_authenticated/turmas'
+    | '/_authenticated/admin/importador'
     | '/_authenticated/alunos/$studentId'
     | '/_authenticated/turmas/$classId'
     | '/_authenticated/turmas/'
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlunosStudentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/importador': {
+      id: '/_authenticated/admin/importador'
+      path: '/admin/importador'
+      fullPath: '/admin/importador'
+      preLoaderRoute: typeof AuthenticatedAdminImportadorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/pulse/turmas': {
       id: '/api/public/pulse/turmas'
       path: '/api/public/pulse/turmas'
@@ -444,6 +464,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRegistrosRoute: typeof AuthenticatedRegistrosRoute
   AuthenticatedTurmasRoute: typeof AuthenticatedTurmasRouteWithChildren
+  AuthenticatedAdminImportadorRoute: typeof AuthenticatedAdminImportadorRoute
   AuthenticatedAlunosStudentIdRoute: typeof AuthenticatedAlunosStudentIdRoute
 }
 
@@ -455,6 +476,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRegistrosRoute: AuthenticatedRegistrosRoute,
   AuthenticatedTurmasRoute: AuthenticatedTurmasRouteWithChildren,
+  AuthenticatedAdminImportadorRoute: AuthenticatedAdminImportadorRoute,
   AuthenticatedAlunosStudentIdRoute: AuthenticatedAlunosStudentIdRoute,
 }
 
