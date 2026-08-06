@@ -1,6 +1,14 @@
 /** INFRAESTRUTURA — implementação Supabase do port de Organização. */
 import { supabase } from "@/integrations/supabase/client";
-import type { MyScope, OrgRepository, OrgUnitInput, SchoolUpsert } from "@/application/ports/org-repository";
+import type {
+  AuditEntry,
+  ImportRunInput,
+  ImportRunRecord,
+  MyScope,
+  OrgRepository,
+  OrgUnitInput,
+  SchoolUpsert,
+} from "@/application/ports/org-repository";
 import type { OrgUnit, School } from "@/domain/org/types";
 import type { AppRole } from "@/domain/rbac/roles";
 
@@ -78,5 +86,41 @@ export const supabaseOrgRepository: OrgRepository = {
       }
     }
     return { inserted, updated };
+  },
+
+  async saveImportRun(input: ImportRunInput): Promise<void> {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw new Error("Sessão expirada.");
+    const { error } = await supabase.from("import_runs").insert({
+      user_id: auth.user.id,
+      file_name: input.file_name,
+      total_detected: input.total_detected,
+      inserted_count: input.inserted_count,
+      updated_count: input.updated_count,
+      skipped_count: input.skipped_count,
+      units_count: input.units_count,
+      issues: input.issues,
+    });
+    if (error) throw error;
+  },
+
+  async listImportRuns(limit = 30): Promise<ImportRunRecord[]> {
+    const { data, error } = await supabase
+      .from("import_runs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as unknown as ImportRunRecord[];
+  },
+
+  async listAuditLog(limit = 50): Promise<AuditEntry[]> {
+    const { data, error } = await supabase
+      .from("audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as unknown as AuditEntry[];
   },
 };

@@ -8,6 +8,8 @@ import { useClasses } from "@/hooks/use-education";
 import { classHeadcount, countHighRisk } from "@/domain/education/rules";
 import { usePaginated } from "@/hooks/use-paginated";
 import { ErrorRetry, LoadMore, DemoBadge } from "@/components/query-state";
+import { EMPTY_SCOPE, OrgScopeFilter, useOrgScope, type OrgScope } from "@/components/org-scope-filter";
+import { filterBySchoolScope } from "@/domain/org/scope";
 
 export const Route = createFileRoute("/_authenticated/turmas/")({
   component: TurmasList,
@@ -15,9 +17,12 @@ export const Route = createFileRoute("/_authenticated/turmas/")({
 
 function TurmasList() {
   const [q, setQ] = useState("");
+  const [scope, setScope] = useState<OrgScope>(EMPTY_SCOPE);
   const classes = useClasses();
+  const { allowedSchoolIds } = useOrgScope(scope);
   const items = classes.data?.data ?? [];
-  const filtered = items.filter((c) =>
+  const scoped = filterBySchoolScope(items, scope, allowedSchoolIds);
+  const filtered = scoped.filter((c) =>
     (c.name + " " + c.grade).toLowerCase().includes(q.toLowerCase()),
   );
   const page = usePaginated(filtered, 12);
@@ -33,6 +38,10 @@ function TurmasList() {
             onChange={(e) => setQ(e.target.value)}
             className="h-11 pl-10 rounded-xl bg-secondary/50 border-transparent"
           />
+        </div>
+
+        <div className="mt-2">
+          <OrgScopeFilter value={scope} onChange={setScope} />
         </div>
 
         <div className="mt-4 space-y-2">

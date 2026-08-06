@@ -4,8 +4,13 @@
  */
 import { useSmartQuery } from "@/hooks/use-smart-query";
 import { educationRepositories } from "@/infrastructure/container";
-import { getClassDetail, getStudentDetail, listClasses } from "@/application/use-cases/education";
-import type { ClassDetail, SchoolClass, StudentDetail } from "@/domain/education/types";
+import {
+  getClassDetail,
+  getStudentDetail,
+  listClasses,
+  listStudents,
+} from "@/application/use-cases/education";
+import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
 
 const api = educationRepositories("supabase");
 const mock = educationRepositories("mock");
@@ -31,5 +36,13 @@ export function useStudentDetail(studentId: string) {
     queryKey: ["student", studentId],
     apiFn: () => getStudentDetail(api, studentId),
     mockFn: () => getStudentDetail(mock, studentId),
+  });
+}
+
+export function useStudents() {
+  return useSmartQuery<Student[]>({
+    queryKey: ["students"],
+    apiFn: () => listStudents(api),
+    mockFn: () => listStudents(mock),
   });
 }

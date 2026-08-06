@@ -116,6 +116,45 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          field: string | null
+          id: string
+          metadata: Json
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          field?: string | null
+          id?: string
+          metadata?: Json
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          field?: string | null
+          id?: string
+          metadata?: Json
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           created_at: string
@@ -244,6 +283,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      import_runs: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          inserted_count: number
+          issues: Json
+          skipped_count: number
+          total_detected: number
+          units_count: number
+          updated_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          inserted_count?: number
+          issues?: Json
+          skipped_count?: number
+          total_detected?: number
+          units_count?: number
+          updated_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          inserted_count?: number
+          issues?: Json
+          skipped_count?: number
+          total_detected?: number
+          units_count?: number
+          updated_count?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       logs_integracao: {
         Row: {

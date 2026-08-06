@@ -13,7 +13,7 @@ const classRepository: ClassRepository = {
   async list(): Promise<SchoolClass[]> {
     const { data, error } = await supabase
       .from("classes")
-      .select("id, name, grade, year, students(id, risk)")
+      .select("id, name, grade, year, school_id, students(id, risk)")
       .order("name");
     if (error) throw error;
     return (data ?? []) as unknown as SchoolClass[];
@@ -40,6 +40,25 @@ const classRepository: ClassRepository = {
 };
 
 const studentRepository: StudentRepository = {
+  async list(): Promise<Student[]> {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*, classes(name, grade, school_id)")
+      .order("full_name");
+    if (error) throw error;
+    return (data ?? []).map((s) => {
+      const row = s as unknown as Student & {
+        classes?: { name?: string; grade?: string; school_id?: string | null } | null;
+      };
+      return {
+        ...row,
+        class_name: row.classes?.name ?? null,
+        grade: row.classes?.grade ?? null,
+        school_id: row.classes?.school_id ?? null,
+      } as Student;
+    });
+  },
+
   async getDetail(studentId: string): Promise<StudentDetail> {
     const [s, obs, sug] = await Promise.all([
       supabase.from("students").select("*, classes(name, grade)").eq("id", studentId).maybeSingle(),
