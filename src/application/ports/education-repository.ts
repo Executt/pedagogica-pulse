@@ -4,7 +4,7 @@
  * Os casos de uso dependem apenas destas interfaces. As implementações
  * concretas (Supabase, Mock, futuros conectores) vivem em `src/infrastructure`.
  */
-import type { ClassDetail, SchoolClass, StudentDetail } from "@/domain/education/types";
+import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
 
 export interface ClassRepository {
   list(): Promise<SchoolClass[]>;
@@ -12,6 +12,7 @@ export interface ClassRepository {
 }
 
 export interface StudentRepository {
+  list(): Promise<Student[]>;
   getDetail(studentId: string): Promise<StudentDetail>;
 }
 
