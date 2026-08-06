@@ -19,6 +19,7 @@ export type SchoolClass = {
   name: string;
   grade: string;
   year: number;
+  school_id?: string | null;
   students: StudentSummary[];
 };
 
@@ -38,6 +39,7 @@ export type Student = {
   class_id: string | null;
   class_name?: string | null;
   grade?: string | null;
+  school_id?: string | null;
   risk: RiskLevel;
   attendance_rate: number;
   has_pei: boolean;
