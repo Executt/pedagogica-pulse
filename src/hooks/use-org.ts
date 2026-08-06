@@ -1,7 +1,13 @@
 /** INTERFACE — hooks de organização e RBAC. UI nunca chama Supabase direto. */
 import { useQuery } from "@tanstack/react-query";
 import { supabaseOrgRepository } from "@/infrastructure/supabase/org.repository";
-import { getFlatOrgTree, getMyScope, listSchools } from "@/application/use-cases/org";
+import {
+  getFlatOrgTree,
+  getMyScope,
+  listAuditTrail,
+  listImportRuns,
+  listSchools,
+} from "@/application/use-cases/org";
 import { can, isNetworkWide, widestScope, type Capability } from "@/domain/rbac/roles";
 
 const repo = supabaseOrgRepository;
@@ -16,6 +22,14 @@ export function useNetworkSchools() {
 
 export function useMyScope() {
   return useQuery({ queryKey: ["my-scope"], queryFn: () => getMyScope(repo) });
+}
+
+export function useImportRuns() {
+  return useQuery({ queryKey: ["import-runs"], queryFn: () => listImportRuns(repo) });
+}
+
+export function useAuditTrail() {
+  return useQuery({ queryKey: ["audit-trail"], queryFn: () => listAuditTrail(repo) });
 }
 
 export function useRbac() {
