@@ -272,11 +272,35 @@ function AdminImportLink() {
   const rbac = useRbac();
   if (!rbac.can("school:import")) return null;
   return (
-    <Link to="/admin/importador" className="flex items-center gap-3 p-4 active:bg-secondary/50">
-      <Building2 className="size-4 text-primary" />
-      <span className="flex-1 text-sm font-medium">Importador de escolas (PDF)</span>
-      <ChevronRight className="size-4 text-muted-foreground" />
-    </Link>
+    <>
+      <Link to="/admin/importador" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+        <Building2 className="size-4 text-primary" />
+        <span className="flex-1 text-sm font-medium">Importador de escolas (PDF)</span>
+        <ChevronRight className="size-4 text-muted-foreground" />
+      </Link>
+      <Link to="/admin/importacoes" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+        <Building2 className="size-4 text-primary" />
+        <span className="flex-1 text-sm font-medium">Histórico de importações</span>
+        <ChevronRight className="size-4 text-muted-foreground" />
+      </Link>
+      <Link to="/escolas" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+        <School className="size-4 text-primary" />
+        <span className="flex-1 text-sm font-medium">Escolas da rede</span>
+        <ChevronRight className="size-4 text-muted-foreground" />
+      </Link>
+      <Link to="/alunos" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+        <GraduationCap className="size-4 text-primary" />
+        <span className="flex-1 text-sm font-medium">Alunos da rede</span>
+        <ChevronRight className="size-4 text-muted-foreground" />
+      </Link>
+      {rbac.can("org:manage") && (
+        <Link to="/admin/auditoria" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+          <Building2 className="size-4 text-primary" />
+          <span className="flex-1 text-sm font-medium">Trilha de auditoria</span>
+          <ChevronRight className="size-4 text-muted-foreground" />
+        </Link>
+      )}
+    </>
   );
 }
 
