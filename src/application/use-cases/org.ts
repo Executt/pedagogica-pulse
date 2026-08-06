@@ -1,4 +1,11 @@
-import type { MyScope, OrgRepository, SchoolUpsert } from "@/application/ports/org-repository";
+import type {
+  AuditEntry,
+  ImportIssueRecord,
+  ImportRunRecord,
+  MyScope,
+  OrgRepository,
+  SchoolUpsert,
+} from "@/application/ports/org-repository";
 import { buildOrgTree, flattenOrgTree } from "@/domain/org/rules";
 import type { OrgUnit, OrgUnitNode, OrgUnitType, School } from "@/domain/org/types";
 import { isImportable, type SchoolCandidate } from "@/domain/import/school-pdf";
@@ -30,7 +37,7 @@ export async function getMyScope(repo: OrgRepository): Promise<MyScope> {
 export async function importSchoolCandidates(
   repo: OrgRepository,
   candidates: SchoolCandidate[],
-  opts: { rootUnitId?: string | null } = {},
+  opts: { rootUnitId?: string | null; fileName?: string; allCandidates?: SchoolCandidate[] } = {},
 ): Promise<{ inserted: number; updated: number; skipped: number; units: number }> {
   const approved = candidates.filter(isImportable);
   const skipped = candidates.length - approved.length;
@@ -62,5 +69,37 @@ export async function importSchoolCandidates(
   }));
 
   const res = await repo.upsertSchools(payload);
+
+  const reviewed = opts.allCandidates ?? candidates;
+  const issues: ImportIssueRecord[] = reviewed.flatMap((c) =>
+    c.issues.map((i) => ({
+      school: c.name,
+      field: i.field,
+      message: i.message,
+      severity: i.severity,
+    })),
+  );
+  try {
+    await repo.saveImportRun({
+      file_name: opts.fileName ?? "documento.pdf",
+      total_detected: reviewed.length,
+      inserted_count: res.inserted,
+      updated_count: res.updated,
+      skipped_count: skipped,
+      units_count: uniqueUnits.size,
+      issues,
+    });
+  } catch (err) {
+    console.warn("[import] não foi possível registrar o histórico:", err);
+  }
+
   return { ...res, skipped, units: uniqueUnits.size };
+}
+
+export async function listImportRuns(repo: OrgRepository): Promise<ImportRunRecord[]> {
+  return repo.listImportRuns();
+}
+
+export async function listAuditTrail(repo: OrgRepository): Promise<AuditEntry[]> {
+  return repo.listAuditLog();
 }
