@@ -8,7 +8,7 @@ import type {
   EducationRepositories,
   StudentRepository,
 } from "@/application/ports/education-repository";
-import type { ClassDetail, SchoolClass, StudentDetail } from "@/domain/education/types";
+import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
 
 const EMPTY_CLASS: ClassDetail = { turma: null, students: [], materials: [], events: [] };
 const EMPTY_STUDENT: StudentDetail = { student: null, observations: [], suggestions: [] };
@@ -23,6 +23,9 @@ const classRepository: ClassRepository = {
 };
 
 const studentRepository: StudentRepository = {
+  async list(): Promise<Student[]> {
+    return getMockData().students as unknown as Student[];
+  },
   async getDetail(studentId: string): Promise<StudentDetail> {
     return (getMockStudentDetail(studentId) as unknown as StudentDetail) ?? EMPTY_STUDENT;
   },
