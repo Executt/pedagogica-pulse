@@ -16,6 +16,7 @@ import { Route as AuthenticatedTurmasRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedRegistrosRouteImport } from './routes/_authenticated/registros'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedEscolasRouteImport } from './routes/_authenticated/escolas'
 import { Route as AuthenticatedCuradoriaRouteImport } from './routes/_authenticated/curadoria'
 import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenticated/comunicados'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
@@ -63,6 +64,11 @@ const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEscolasRoute = AuthenticatedEscolasRouteImport.update({
+  id: '/escolas',
+  path: '/escolas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCuradoriaRoute = AuthenticatedCuradoriaRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/escolas': typeof AuthenticatedEscolasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/registros': typeof AuthenticatedRegistrosRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/escolas': typeof AuthenticatedEscolasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/registros': typeof AuthenticatedRegistrosRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/comunicados': typeof AuthenticatedComunicadosRoute
   '/_authenticated/curadoria': typeof AuthenticatedCuradoriaRoute
+  '/_authenticated/escolas': typeof AuthenticatedEscolasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/registros': typeof AuthenticatedRegistrosRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/comunicados'
     | '/curadoria'
+    | '/escolas'
     | '/home'
     | '/perfil'
     | '/registros'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/comunicados'
     | '/curadoria'
+    | '/escolas'
     | '/home'
     | '/perfil'
     | '/registros'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda'
     | '/_authenticated/comunicados'
     | '/_authenticated/curadoria'
+    | '/_authenticated/escolas'
     | '/_authenticated/home'
     | '/_authenticated/perfil'
     | '/_authenticated/registros'
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/escolas': {
+      id: '/_authenticated/escolas'
+      path: '/escolas'
+      fullPath: '/escolas'
+      preLoaderRoute: typeof AuthenticatedEscolasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/curadoria': {
@@ -460,6 +479,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedComunicadosRoute: typeof AuthenticatedComunicadosRoute
   AuthenticatedCuradoriaRoute: typeof AuthenticatedCuradoriaRoute
+  AuthenticatedEscolasRoute: typeof AuthenticatedEscolasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRegistrosRoute: typeof AuthenticatedRegistrosRoute
@@ -472,6 +492,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedComunicadosRoute: AuthenticatedComunicadosRoute,
   AuthenticatedCuradoriaRoute: AuthenticatedCuradoriaRoute,
+  AuthenticatedEscolasRoute: AuthenticatedEscolasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRegistrosRoute: AuthenticatedRegistrosRoute,
@@ -498,13 +519,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
