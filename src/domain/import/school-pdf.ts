@@ -195,10 +195,34 @@ export function parseSchoolsFromText(text: string): ParseResult {
     });
   });
 
-  // Deduplicação por INEP e por nome normalizado
+  const { candidates: validated, duplicates } = revalidateCandidates(candidates);
+
+  return {
+    candidates: validated,
+    orgUnits: [...orgUnits.entries()].map(([name, type]) => ({ name, type })),
+    stats: {
+      lines: lines.length,
+      withErrors: validated.filter((c) => c.issues.some((i) => i.severity === "erro")).length,
+      withWarnings: validated.filter(
+        (c) => c.issues.length > 0 && !c.issues.some((i) => i.severity === "erro"),
+      ).length,
+      duplicates,
+    },
+  };
+}
+
+/**
+ * Revalida a lista inteira (usado na tela de revisão manual, após o usuário
+ * corrigir campos). Retorna novos objetos — não muta a entrada.
+ */
+export function revalidateCandidates(input: SchoolCandidate[]): {
+  candidates: SchoolCandidate[];
+  duplicates: number;
+} {
   const seenInep = new Map<string, string>();
   const seenName = new Map<string, string>();
   let duplicates = 0;
+  const candidates = input.map((c) => ({ ...c, issues: [] as Inconsistency[] }));
 
   candidates.forEach((c) => {
     const issues: Inconsistency[] = [];
@@ -242,20 +266,21 @@ export function parseSchoolsFromText(text: string): ParseResult {
     c.issues = issues;
   });
 
-  return {
-    candidates,
-    orgUnits: [...orgUnits.entries()].map(([name, type]) => ({ name, type })),
-    stats: {
-      lines: lines.length,
-      withErrors: candidates.filter((c) => c.issues.some((i) => i.severity === "erro")).length,
-      withWarnings: candidates.filter(
-        (c) => c.issues.length > 0 && !c.issues.some((i) => i.severity === "erro"),
-      ).length,
-      duplicates,
-    },
-  };
+  return { candidates, duplicates };
 }
 
 export function isImportable(c: SchoolCandidate): boolean {
   return !c.issues.some((i) => i.severity === "erro");
+}
+
+/** Estatísticas recalculadas para a tela de revisão. */
+export function candidateStats(candidates: SchoolCandidate[]) {
+  return {
+    total: candidates.length,
+    withErrors: candidates.filter((c) => c.issues.some((i) => i.severity === "erro")).length,
+    withWarnings: candidates.filter(
+      (c) => c.issues.length > 0 && !c.issues.some((i) => i.severity === "erro"),
+    ).length,
+    clean: candidates.filter((c) => c.issues.length === 0).length,
+  };
 }
