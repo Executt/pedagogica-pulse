@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, FileClock, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Download, FileClock, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import { MobileShell } from "@/components/mobile-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ErrorRetry } from "@/components/query-state";
 import { useImportRuns, useRbac } from "@/hooks/use-org";
+import { importRunsCsvFileName, importRunsToCsv } from "@/domain/import/csv";
+import { downloadTextFile } from "@/lib/download";
 
 export const Route = createFileRoute("/_authenticated/admin/importacoes")({
   head: () => ({
@@ -26,6 +30,16 @@ export const Route = createFileRoute("/_authenticated/admin/importacoes")({
 function ImportacoesPage() {
   const rbac = useRbac();
   const runs = useImportRuns();
+  const rows = runs.data ?? [];
+
+  function exportCsv() {
+    if (rows.length === 0) {
+      toast.error("Nenhuma importação para exportar.");
+      return;
+    }
+    downloadTextFile(importRunsToCsv(rows), importRunsCsvFileName());
+    toast.success("CSV gerado com data, usuário, contagens e inconsistências.");
+  }
 
   if (!rbac.isLoading && !rbac.can("school:import")) {
     return (
@@ -39,15 +53,28 @@ function ImportacoesPage() {
   }
 
   return (
-    <MobileShell title="Histórico de importações">
+    <MobileShell
+      title="Histórico de importações"
+      action={
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 rounded-lg text-xs gap-1"
+          onClick={exportCsv}
+          disabled={rows.length === 0}
+        >
+          <Download className="size-3.5" /> CSV
+        </Button>
+      }
+    >
       <div className="px-5 pt-4 pb-8 space-y-3">
         {runs.isLoading && <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>}
         {runs.isError && <ErrorRetry error={runs.error} onRetry={() => runs.refetch()} />}
-        {runs.data?.length === 0 && (
+        {!runs.isLoading && rows.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Nenhuma importação registrada ainda.</p>
         )}
 
-        {(runs.data ?? []).map((r) => (
+        {rows.map((r) => (
           <Card key={r.id} className="p-4 rounded-2xl">
             <div className="flex items-start gap-3">
               <div className="size-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
