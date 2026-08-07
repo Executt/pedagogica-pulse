@@ -19,8 +19,15 @@ import {
 } from "@/domain/import/school-pdf";
 import { Input } from "@/components/ui/input";
 import { importSchoolCandidates } from "@/application/use-cases/org";
-import { orgRepository, useRbac } from "@/hooks/use-org";
+import { orgRepository, useNetworkSchools, useRbac } from "@/hooks/use-org";
 import { ORG_UNIT_LABEL } from "@/domain/org/types";
+import {
+  changedRows,
+  diffCandidate,
+  groupByUnit,
+  groupIssuesByType,
+  matchExistingSchool,
+} from "@/domain/import/review";
 
 export const Route = createFileRoute("/_authenticated/admin/importador")({
   head: () => ({
@@ -46,11 +53,14 @@ export const Route = createFileRoute("/_authenticated/admin/importador")({
 function ImportadorPage() {
   const rbac = useRbac();
   const qc = useQueryClient();
+  const existingSchools = useNetworkSchools();
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [fileName, setFileName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<string | null>(null);
+  const [comparing, setComparing] = useState<string | null>(null);
+  const [bulkLog, setBulkLog] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
 
   const toggle = (key: string) =>
@@ -135,6 +145,25 @@ function ImportadorPage() {
   const chosen = candidates.filter((c) => selected.has(c.key) && isImportable(c));
   const blockedSelected = candidates.filter((c) => selected.has(c.key) && !isImportable(c));
   const warningsInChosen = chosen.filter((c) => c.issues.length > 0);
+  const schools = existingSchools.data ?? [];
+  const issueGroups = groupIssuesByType(candidates);
+  const unitGroups = groupByUnit(candidates);
+
+  /** Ação em lote: aceita (seleciona) ou rejeita (desmarca) um conjunto de chaves. */
+  function applyBulk(label: string, keys: string[], accept: boolean) {
+    const importable = keys.filter((k) => {
+      const c = candidates.find((x) => x.key === k);
+      return c ? isImportable(c) : false;
+    });
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (accept) importable.forEach((k) => next.add(k));
+      else keys.forEach((k) => next.delete(k));
+      return next;
+    });
+    const n = accept ? importable.length : keys.length;
+    setBulkLog((prev) => [...prev, `${accept ? "Aceitas" : "Rejeitadas"} ${n} · ${label}`]);
+  }
 
   return (
     <MobileShell title="Importador de escolas">
@@ -187,9 +216,72 @@ function ImportadorPage() {
                   {chosen.length} de {candidates.length} selecionadas
                 </span>
               </div>
+
+              <Card className="p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold">Ações em lote</h3>
+                  {bulkLog.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-[11px] rounded-lg"
+                      onClick={() => setBulkLog([])}
+                    >
+                      Limpar registro
+                    </Button>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Por tipo de inconsistência</p>
+                  <div className="mt-1 space-y-1">
+                    {issueGroups.length === 0 && (
+                      <p className="text-[11px] text-muted-foreground">Nenhuma inconsistência detectada.</p>
+                    )}
+                    {issueGroups.map((g) => (
+                      <BulkRow
+                        key={`${g.field}-${g.severity}`}
+                        label={`${g.field} · ${g.severity}`}
+                        count={g.count}
+                        onAccept={() => applyBulk(`${g.field} (${g.severity})`, g.keys, true)}
+                        onReject={() => applyBulk(`${g.field} (${g.severity})`, g.keys, false)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Por hierarquia</p>
+                  <div className="mt-1 space-y-1">
+                    {unitGroups.map((g) => (
+                      <BulkRow
+                        key={g.unit}
+                        label={g.unit}
+                        count={g.count}
+                        onAccept={() => applyBulk(g.unit, g.keys, true)}
+                        onReject={() => applyBulk(g.unit, g.keys, false)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {bulkLog.length > 0 && (
+                  <ul className="rounded-xl bg-secondary/50 px-3 py-2 space-y-0.5">
+                    {bulkLog.map((l, i) => (
+                      <li key={i} className="text-[11px] text-muted-foreground">
+                        {l}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
               {candidates.map((c) => {
                 const blocked = !isImportable(c);
                 const isEditing = editing === c.key;
+                const existing = matchExistingSchool(c, schools);
+                const diff = diffCandidate(c, existing);
+                const changes = changedRows(diff);
                 return (
                   <Card key={c.key} className="p-3 rounded-2xl">
                     <div className="flex items-start gap-3">
@@ -238,6 +330,40 @@ function ImportadorPage() {
                         >
                           {isEditing ? "Fechar correção" : "Corrigir manualmente"}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="mt-1 h-7 px-2 text-[11px] rounded-lg"
+                          onClick={() => setComparing(comparing === c.key ? null : c.key)}
+                        >
+                          {comparing === c.key
+                            ? "Fechar comparação"
+                            : existing
+                              ? `Comparar com a base (${changes.length} mudança${changes.length === 1 ? "" : "s"})`
+                              : "Comparar com a base (nova escola)"}
+                        </Button>
+
+                        {comparing === c.key && (
+                          <div className="mt-2 rounded-xl border overflow-hidden">
+                            <div className="grid grid-cols-[70px_1fr_1fr] bg-secondary/60 px-2 py-1 text-[10px] font-medium">
+                              <span>Campo</span>
+                              <span>Extraído do PDF</span>
+                              <span>{existing ? "Valor atual" : "Não existe na base"}</span>
+                            </div>
+                            {diff.map((row) => (
+                              <div
+                                key={row.field}
+                                className={`grid grid-cols-[70px_1fr_1fr] px-2 py-1 text-[10px] border-t ${
+                                  row.changed ? "bg-amber-500/5" : ""
+                                }`}
+                              >
+                                <span className="text-muted-foreground">{row.label}</span>
+                                <span className={row.changed ? "font-medium" : ""}>{row.extracted}</span>
+                                <span className="text-muted-foreground">{row.current}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {isEditing && (
                           <div className="mt-2 space-y-2">
@@ -321,6 +447,12 @@ function ImportadorPage() {
                     <strong className="text-foreground">{warningsInChosen.length}</strong> com avisos aceitos
                     manualmente.
                   </li>
+                  {bulkLog.length > 0 && (
+                    <li>
+                      <strong className="text-foreground">{bulkLog.length}</strong> ação(ões) em lote aplicadas:{" "}
+                      {bulkLog.join("; ")}.
+                    </li>
+                  )}
                   <li>
                     <strong className="text-foreground">
                       {candidates.filter((c) => !isImportable(c)).length}
@@ -362,6 +494,32 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
     <div className="grid grid-cols-[70px_1fr] items-center gap-2">
       <span className="text-[11px] text-muted-foreground">{label}</span>
       {children}
+    </div>
+  );
+}
+
+function BulkRow({
+  label,
+  count,
+  onAccept,
+  onReject,
+}: {
+  label: string;
+  count: number;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-secondary/40 px-2 py-1">
+      <span className="min-w-0 flex-1 truncate text-[11px]">
+        {label} <span className="text-muted-foreground">({count})</span>
+      </span>
+      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] rounded-md" onClick={onAccept}>
+        Aceitar
+      </Button>
+      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] rounded-md" onClick={onReject}>
+        Rejeitar
+      </Button>
     </div>
   );
 }
