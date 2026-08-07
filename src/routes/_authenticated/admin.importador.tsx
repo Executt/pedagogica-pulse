@@ -498,6 +498,32 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+function BulkRow({
+  label,
+  count,
+  onAccept,
+  onReject,
+}: {
+  label: string;
+  count: number;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-secondary/40 px-2 py-1">
+      <span className="min-w-0 flex-1 truncate text-[11px]">
+        {label} <span className="text-muted-foreground">({count})</span>
+      </span>
+      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] rounded-md" onClick={onAccept}>
+        Aceitar
+      </Button>
+      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] rounded-md" onClick={onReject}>
+        Rejeitar
+      </Button>
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl bg-secondary/50 px-3 py-2">
