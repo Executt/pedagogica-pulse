@@ -403,19 +403,20 @@ function ImportadorPage() {
                 )}
               </Card>
 
-              {candidates.map((c) => {
+              {page.visible.map((c) => {
                 const blocked = !isImportable(c);
                 const isEditing = editing === c.key;
                 const existing = matchExistingSchool(c, schools);
                 const diff = diffCandidate(c, existing);
                 const changes = changedRows(diff);
+                const rejected = draft.state.rejectedFields[c.key] ?? [];
                 return (
                   <Card key={c.key} className="p-3 rounded-2xl">
                     <div className="flex items-start gap-3">
                       <Checkbox
-                        checked={selected.has(c.key)}
+                        checked={isSelected(draft.state, c.key)}
                         disabled={blocked}
-                        onCheckedChange={() => toggle(c.key)}
+                        onCheckedChange={() => toggle(c.key, c.name)}
                         className="mt-1"
                       />
                       <div className="min-w-0 flex-1">
@@ -472,23 +473,79 @@ function ImportadorPage() {
 
                         {comparing === c.key && (
                           <div className="mt-2 rounded-xl border overflow-hidden">
-                            <div className="grid grid-cols-[70px_1fr_1fr] bg-secondary/60 px-2 py-1 text-[10px] font-medium">
+                            <div className="grid grid-cols-[64px_1fr_1fr_56px] bg-secondary/60 px-2 py-1 text-[10px] font-medium">
                               <span>Campo</span>
                               <span>Extraído do PDF</span>
                               <span>{existing ? "Valor atual" : "Não existe na base"}</span>
+                              <span className="text-right">Decisão</span>
                             </div>
-                            {diff.map((row) => (
-                              <div
-                                key={row.field}
-                                className={`grid grid-cols-[70px_1fr_1fr] px-2 py-1 text-[10px] border-t ${
-                                  row.changed ? "bg-amber-500/5" : ""
-                                }`}
-                              >
-                                <span className="text-muted-foreground">{row.label}</span>
-                                <span className={row.changed ? "font-medium" : ""}>{row.extracted}</span>
-                                <span className="text-muted-foreground">{row.current}</span>
-                              </div>
-                            ))}
+                            {diff.map((row) => {
+                              const isRejected = isFieldRejected(draft.state, c.key, row.field);
+                              return (
+                                <div
+                                  key={row.field}
+                                  className={`grid grid-cols-[64px_1fr_1fr_56px] items-center px-2 py-1 text-[10px] border-t ${
+                                    isRejected
+                                      ? "bg-destructive/5"
+                                      : row.changed
+                                        ? "bg-amber-500/10"
+                                        : ""
+                                  }`}
+                                >
+                                  <span className="text-muted-foreground">{row.label}</span>
+                                  <span
+                                    className={
+                                      isRejected
+                                        ? "line-through text-muted-foreground"
+                                        : row.changed
+                                          ? "font-semibold text-amber-700"
+                                          : ""
+                                    }
+                                  >
+                                    {row.extracted}
+                                  </span>
+                                  <span
+                                    className={
+                                      isRejected ? "font-medium" : "text-muted-foreground"
+                                    }
+                                  >
+                                    {row.current}
+                                  </span>
+                                  <div className="flex justify-end">
+                                    {row.changed ? (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 px-1 text-[10px] rounded-md gap-1"
+                                        onClick={() =>
+                                          mutateDraft(
+                                            `${isRejected ? "Aceito" : "Rejeitado"} campo ${row.label} · ${c.name}`,
+                                            (s) =>
+                                              setFieldDecision(s, c.key, row.field, isRejected),
+                                          )
+                                        }
+                                      >
+                                        {isRejected ? (
+                                          <>
+                                            <XCircle className="size-3 text-destructive" /> Rejeitado
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CheckCircle2 className="size-3 text-emerald-600" /> Aceito
+                                          </>
+                                        )}
+                                      </Button>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <p className="border-t bg-secondary/30 px-2 py-1 text-[10px] text-muted-foreground">
+                              {changes.length} diferença(s) · {rejected.length} campo(s) rejeitado(s) nesta
+                              escola
+                            </p>
                           </div>
                         )}
 
