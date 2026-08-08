@@ -88,22 +88,32 @@ function ImportadorPage() {
   const rbac = useRbac();
   const qc = useQueryClient();
   const existingSchools = useNetworkSchools();
+  const recordAudit = useAuditRecorder();
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [fileName, setFileName] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [draft, setDraft] = useState<Draft>(() => createDraft());
   const [editing, setEditing] = useState<string | null>(null);
   const [comparing, setComparing] = useState<string | null>(null);
-  const [bulkLog, setBulkLog] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
+  const [term, setTerm] = useState("");
+  const [sortBy, setSortBy] = useState<CandidateSortBy>("name");
+  const [dir, setDir] = useState<SortDir>("asc");
+  const [progress, setProgress] = useState<{
+    status: "idle" | "running" | "done" | "error";
+    value: number;
+    message: string;
+  }>({ status: "idle", value: 0, message: "" });
 
-  const toggle = (key: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  /** Toda alteração do rascunho entra no histórico e pode ser desfeita. */
+  const mutateDraft = (label: string, fn: Parameters<typeof applyDraft>[2]) =>
+    setDraft((d) => applyDraft(d, label, fn));
+
+  const toggle = (key: string, name: string) =>
+    mutateDraft(
+      `${isSelected(draft.state, key) ? "Rejeitada" : "Aceita"} · ${name}`,
+      (s) => toggleSelection(s, key),
+    );
 
   async function handleFile(file: File) {
     setParsing(true);
@@ -113,7 +123,8 @@ function ImportadorPage() {
       setResult(parsed);
       setFileName(file.name);
       setConfirming(false);
-      setSelected(new Set(parsed.candidates.filter(isImportable).map((c) => c.key)));
+      setProgress({ status: "idle", value: 0, message: "" });
+      setDraft(createDraft(parsed.candidates.filter(isImportable).map((c) => c.key)));
       toast.success(`${parsed.candidates.length} escolas identificadas no PDF.`);
     } catch (err) {
       console.error(err);
