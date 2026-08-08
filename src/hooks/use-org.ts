@@ -1,5 +1,6 @@
 /** INTERFACE — hooks de organização e RBAC. UI nunca chama Supabase direto. */
 import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabaseOrgRepository } from "@/infrastructure/supabase/org.repository";
 import {
   getFlatOrgTree,
@@ -7,7 +8,9 @@ import {
   listAuditTrail,
   listImportRuns,
   listSchools,
+  recordAuditAction,
 } from "@/application/use-cases/org";
+import type { AuditRecordInput } from "@/application/ports/org-repository";
 import { can, isNetworkWide, widestScope, type Capability } from "@/domain/rbac/roles";
 
 const repo = supabaseOrgRepository;
@@ -30,6 +33,11 @@ export function useImportRuns() {
 
 export function useAuditTrail() {
   return useQuery({ queryKey: ["audit-trail"], queryFn: () => listAuditTrail(repo) });
+}
+
+/** Registra ações do usuário (exportações, decisões de revisão) na auditoria. */
+export function useAuditRecorder() {
+  return useCallback((input: AuditRecordInput) => recordAuditAction(repo, input), []);
 }
 
 export function useRbac() {

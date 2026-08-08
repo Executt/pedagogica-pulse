@@ -1,5 +1,6 @@
 import type {
   AuditEntry,
+  AuditRecordInput,
   ImportIssueRecord,
   ImportRunRecord,
   MyScope,
@@ -102,4 +103,18 @@ export async function listImportRuns(repo: OrgRepository): Promise<ImportRunReco
 
 export async function listAuditTrail(repo: OrgRepository): Promise<AuditEntry[]> {
   return repo.listAuditLog();
+}
+
+/** Registra uma ação do usuário na trilha de auditoria sem quebrar o fluxo em caso de falha. */
+export async function recordAuditAction(
+  repo: OrgRepository,
+  input: AuditRecordInput,
+): Promise<boolean> {
+  try {
+    await repo.recordAudit(input);
+    return true;
+  } catch (err) {
+    console.warn("[audit] não foi possível registrar a ação:", err);
+    return false;
+  }
 }
