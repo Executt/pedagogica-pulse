@@ -53,6 +53,16 @@ export type AuditEntry = {
   created_at: string;
 };
 
+export type AuditRecordInput = {
+  entity: string;
+  entity_id?: string | null;
+  action: string;
+  field?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
 export interface OrgRepository {
   listUnits(): Promise<OrgUnit[]>;
   listSchools(): Promise<School[]>;
@@ -62,4 +72,5 @@ export interface OrgRepository {
   saveImportRun(input: ImportRunInput): Promise<void>;
   listImportRuns(limit?: number): Promise<ImportRunRecord[]>;
   listAuditLog(limit?: number): Promise<AuditEntry[]>;
+  recordAudit(input: AuditRecordInput): Promise<void>;
 }

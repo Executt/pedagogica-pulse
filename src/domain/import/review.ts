@@ -90,3 +90,27 @@ export function diffCandidate(candidate: SchoolCandidate, existing: School | nul
 export function changedRows(rows: DiffRow[]): DiffRow[] {
   return rows.filter((r) => r.changed && r.extracted !== "—");
 }
+
+/**
+ * Aplica as decisões campo a campo: campos rejeitados voltam ao valor atual da
+ * base (ou ficam vazios quando a escola ainda não existe). O nome nunca é
+ * descartado quando não há escola correspondente.
+ */
+export function applyFieldDecisions(
+  candidate: SchoolCandidate,
+  existing: School | null,
+  rejectedFields: string[],
+): SchoolCandidate {
+  if (rejectedFields.length === 0) return candidate;
+  const next: SchoolCandidate = { ...candidate };
+  FIELDS.forEach(({ key, school }) => {
+    if (!rejectedFields.includes(key)) return;
+    if (key === "name" && !existing) return;
+    const fallback = existing ? existing[school] : null;
+    const empty = Array.isArray(candidate[key]) ? [] : null;
+    (next as Record<string, unknown>)[key] = fallback ?? empty;
+  });
+  return next;
+}
+
+export const COMPARABLE_FIELDS = FIELDS.map((f) => ({ key: f.key, label: f.label }));
