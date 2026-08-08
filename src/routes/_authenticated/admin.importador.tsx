@@ -156,12 +156,36 @@ function ImportadorPage() {
   }
 
   const importMutation = useMutation({
-    mutationFn: async (candidates: SchoolCandidate[]) =>
-      importSchoolCandidates(orgRepository, candidates, {
+    mutationFn: async (candidates: SchoolCandidate[]) => {
+      setProgress({ status: "running", value: 20, message: "Enviando escolas selecionadas..." });
+      const r = await importSchoolCandidates(orgRepository, candidates, {
         fileName,
         allCandidates: result?.candidates ?? candidates,
-      }),
+      });
+      setProgress({ status: "running", value: 80, message: "Registrando decisões na auditoria..." });
+      await recordAudit({
+        entity: "import_runs",
+        action: "review_confirm",
+        field: "importacao",
+        new_value: fileName,
+        metadata: {
+          selecionadas: candidates.length,
+          criadas: r.inserted,
+          atualizadas: r.updated,
+          unidades: r.units,
+          bloqueadas: r.skipped,
+          campos_rejeitados: rejectedCount(draft.state),
+          decisoes: draft.history.map((h) => h.label),
+        },
+      });
+      return r;
+    },
     onSuccess: (r) => {
+      setProgress({
+        status: "done",
+        value: 100,
+        message: `${r.inserted} criadas, ${r.updated} atualizadas · registrado na auditoria.`,
+      });
       toast.success(
         `Importação concluída: ${r.inserted} novas, ${r.updated} atualizadas, ${r.units} unidades, ${r.skipped} bloqueadas.`,
       );
@@ -169,8 +193,12 @@ function ImportadorPage() {
       qc.invalidateQueries({ queryKey: ["org-schools"] });
       qc.invalidateQueries({ queryKey: ["org-tree"] });
       qc.invalidateQueries({ queryKey: ["import-runs"] });
+      qc.invalidateQueries({ queryKey: ["audit-trail"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      setProgress({ status: "error", value: 0, message: e.message });
+      toast.error(e.message);
+    },
   });
 
   if (!rbac.isLoading && !rbac.can("school:import")) {
@@ -187,27 +215,29 @@ function ImportadorPage() {
   }
 
   const candidates = result?.candidates ?? [];
-  const chosen = candidates.filter((c) => selected.has(c.key) && isImportable(c));
-  const blockedSelected = candidates.filter((c) => selected.has(c.key) && !isImportable(c));
-  const warningsInChosen = chosen.filter((c) => c.issues.length > 0);
   const schools = existingSchools.data ?? [];
+  const chosen = candidates
+    .filter((c) => isSelected(draft.state, c.key) && isImportable(c))
+    .map((c) =>
+      applyFieldDecisions(c, matchExistingSchool(c, schools), draft.state.rejectedFields[c.key] ?? []),
+    );
+  const blockedSelected = candidates.filter(
+    (c) => isSelected(draft.state, c.key) && !isImportable(c),
+  );
+  const warningsInChosen = chosen.filter((c) => c.issues.length > 0);
   const issueGroups = groupIssuesByType(candidates);
   const unitGroups = groupByUnit(candidates);
 
-  /** Ação em lote: aceita (seleciona) ou rejeita (desmarca) um conjunto de chaves. */
+  /** Ação em lote (rascunho): aceita ou rejeita um conjunto de chaves, com desfazer. */
   function applyBulk(label: string, keys: string[], accept: boolean) {
     const importable = keys.filter((k) => {
       const c = candidates.find((x) => x.key === k);
       return c ? isImportable(c) : false;
     });
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (accept) importable.forEach((k) => next.add(k));
-      else keys.forEach((k) => next.delete(k));
-      return next;
-    });
     const n = accept ? importable.length : keys.length;
-    setBulkLog((prev) => [...prev, `${accept ? "Aceitas" : "Rejeitadas"} ${n} · ${label}`]);
+    mutateDraft(`${accept ? "Aceitas" : "Rejeitadas"} ${n} · ${label}`, (s) =>
+      bulkSelect(s, accept ? importable : keys, accept),
+    );
   }
 
   return (
