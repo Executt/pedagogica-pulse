@@ -299,17 +299,57 @@ function ImportadorPage() {
                 </span>
               </div>
 
+              <Card className="p-3 rounded-2xl space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    value={term}
+                    onChange={(e) => setTerm(e.target.value)}
+                    placeholder="Buscar por nome, INEP, CNPJ, unidade ou inconsistência"
+                    className="h-10 pl-9 rounded-xl text-sm"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  {(Object.keys(CANDIDATE_SORT_LABEL) as CandidateSortBy[]).map((k) => (
+                    <Button
+                      key={k}
+                      size="sm"
+                      variant={sortBy === k ? "secondary" : "ghost"}
+                      className="h-7 px-2 text-[11px] rounded-lg"
+                      onClick={() => setSortBy(k)}
+                    >
+                      {CANDIDATE_SORT_LABEL[k]}
+                    </Button>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-[11px] rounded-lg gap-1"
+                    onClick={() => setDir((d) => (d === "asc" ? "desc" : "asc"))}
+                  >
+                    <ArrowDownUp className="size-3" /> {dir === "asc" ? "A–Z" : "Z–A"}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {filtered.length} de {candidates.length} escolas · {rejectedCount(draft.state)} campo(s)
+                  rejeitado(s)
+                </p>
+              </Card>
+
               <Card className="p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold">Ações em lote</h3>
-                  {bulkLog.length > 0 && (
+                  <h3 className="text-xs font-semibold">Ações em lote (rascunho)</h3>
+                  {canUndo(draft) && (
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-[11px] rounded-lg"
-                      onClick={() => setBulkLog([])}
+                      variant="outline"
+                      className="h-7 px-2 text-[11px] rounded-lg gap-1"
+                      onClick={() => {
+                        setDraft((d) => undoDraft(d));
+                        toast.success("Última decisão desfeita.");
+                      }}
                     >
-                      Limpar registro
+                      <Undo2 className="size-3" /> Desfazer
                     </Button>
                   )}
                 </div>
@@ -347,14 +387,19 @@ function ImportadorPage() {
                   </div>
                 </div>
 
-                {bulkLog.length > 0 && (
-                  <ul className="rounded-xl bg-secondary/50 px-3 py-2 space-y-0.5">
-                    {bulkLog.map((l, i) => (
-                      <li key={i} className="text-[11px] text-muted-foreground">
-                        {l}
-                      </li>
-                    ))}
-                  </ul>
+                {draft.history.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Histórico de alterações ({draft.history.length})
+                    </p>
+                    <ul className="mt-1 rounded-xl bg-secondary/50 px-3 py-2 space-y-0.5">
+                      {draft.history.slice(0, 8).map((h, i) => (
+                        <li key={`${h.at}-${i}`} className="text-[11px] text-muted-foreground">
+                          {new Date(h.at).toLocaleTimeString("pt-BR")} · {h.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </Card>
 
