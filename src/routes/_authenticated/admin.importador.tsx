@@ -201,6 +201,13 @@ function ImportadorPage() {
     },
   });
 
+  const allCandidates = result?.candidates ?? [];
+  const filtered = useMemo(
+    () => sortCandidates(searchCandidates(allCandidates, term), sortBy, dir),
+    [allCandidates, term, sortBy, dir],
+  );
+  const page = usePaginated(filtered, 10);
+
   if (!rbac.isLoading && !rbac.can("school:import")) {
     return (
       <MobileShell title="Importador de escolas">
@@ -214,7 +221,7 @@ function ImportadorPage() {
     );
   }
 
-  const candidates = result?.candidates ?? [];
+  const candidates = allCandidates;
   const schools = existingSchools.data ?? [];
   const chosen = candidates
     .filter((c) => isSelected(draft.state, c.key) && isImportable(c))
