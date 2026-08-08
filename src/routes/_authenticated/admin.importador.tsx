@@ -1,13 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownUp,
+  CheckCircle2,
+  FileUp,
+  Loader2,
+  Search,
+  ShieldAlert,
+  Undo2,
+  XCircle,
+} from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { LoadMore } from "@/components/query-state";
+import { usePaginated } from "@/hooks/use-paginated";
 import { extractPdfText } from "@/lib/pdf-text";
 import {
   candidateStats,
@@ -19,15 +32,36 @@ import {
 } from "@/domain/import/school-pdf";
 import { Input } from "@/components/ui/input";
 import { importSchoolCandidates } from "@/application/use-cases/org";
-import { orgRepository, useNetworkSchools, useRbac } from "@/hooks/use-org";
+import { orgRepository, useAuditRecorder, useNetworkSchools, useRbac } from "@/hooks/use-org";
 import { ORG_UNIT_LABEL } from "@/domain/org/types";
 import {
+  applyFieldDecisions,
   changedRows,
   diffCandidate,
   groupByUnit,
   groupIssuesByType,
   matchExistingSchool,
 } from "@/domain/import/review";
+import {
+  CANDIDATE_SORT_LABEL,
+  searchCandidates,
+  sortCandidates,
+  type CandidateSortBy,
+  type SortDir,
+} from "@/domain/import/query";
+import {
+  applyDraft,
+  bulkSelect,
+  canUndo,
+  createDraft,
+  isFieldRejected,
+  isSelected,
+  rejectedCount,
+  setFieldDecision,
+  toggleSelection,
+  undoDraft,
+  type Draft,
+} from "@/domain/import/draft";
 
 export const Route = createFileRoute("/_authenticated/admin/importador")({
   head: () => ({
@@ -54,22 +88,32 @@ function ImportadorPage() {
   const rbac = useRbac();
   const qc = useQueryClient();
   const existingSchools = useNetworkSchools();
+  const recordAudit = useAuditRecorder();
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [fileName, setFileName] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [draft, setDraft] = useState<Draft>(() => createDraft());
   const [editing, setEditing] = useState<string | null>(null);
   const [comparing, setComparing] = useState<string | null>(null);
-  const [bulkLog, setBulkLog] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
+  const [term, setTerm] = useState("");
+  const [sortBy, setSortBy] = useState<CandidateSortBy>("name");
+  const [dir, setDir] = useState<SortDir>("asc");
+  const [progress, setProgress] = useState<{
+    status: "idle" | "running" | "done" | "error";
+    value: number;
+    message: string;
+  }>({ status: "idle", value: 0, message: "" });
 
-  const toggle = (key: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  /** Toda alteração do rascunho entra no histórico e pode ser desfeita. */
+  const mutateDraft = (label: string, fn: Parameters<typeof applyDraft>[2]) =>
+    setDraft((d) => applyDraft(d, label, fn));
+
+  const toggle = (key: string, name: string) =>
+    mutateDraft(
+      `${isSelected(draft.state, key) ? "Rejeitada" : "Aceita"} · ${name}`,
+      (s) => toggleSelection(s, key),
+    );
 
   async function handleFile(file: File) {
     setParsing(true);
@@ -79,7 +123,8 @@ function ImportadorPage() {
       setResult(parsed);
       setFileName(file.name);
       setConfirming(false);
-      setSelected(new Set(parsed.candidates.filter(isImportable).map((c) => c.key)));
+      setProgress({ status: "idle", value: 0, message: "" });
+      setDraft(createDraft(parsed.candidates.filter(isImportable).map((c) => c.key)));
       toast.success(`${parsed.candidates.length} escolas identificadas no PDF.`);
     } catch (err) {
       console.error(err);
@@ -111,12 +156,36 @@ function ImportadorPage() {
   }
 
   const importMutation = useMutation({
-    mutationFn: async (candidates: SchoolCandidate[]) =>
-      importSchoolCandidates(orgRepository, candidates, {
+    mutationFn: async (candidates: SchoolCandidate[]) => {
+      setProgress({ status: "running", value: 20, message: "Enviando escolas selecionadas..." });
+      const r = await importSchoolCandidates(orgRepository, candidates, {
         fileName,
         allCandidates: result?.candidates ?? candidates,
-      }),
+      });
+      setProgress({ status: "running", value: 80, message: "Registrando decisões na auditoria..." });
+      await recordAudit({
+        entity: "import_runs",
+        action: "review_confirm",
+        field: "importacao",
+        new_value: fileName,
+        metadata: {
+          selecionadas: candidates.length,
+          criadas: r.inserted,
+          atualizadas: r.updated,
+          unidades: r.units,
+          bloqueadas: r.skipped,
+          campos_rejeitados: rejectedCount(draft.state),
+          decisoes: draft.history.map((h) => h.label),
+        },
+      });
+      return r;
+    },
     onSuccess: (r) => {
+      setProgress({
+        status: "done",
+        value: 100,
+        message: `${r.inserted} criadas, ${r.updated} atualizadas · registrado na auditoria.`,
+      });
       toast.success(
         `Importação concluída: ${r.inserted} novas, ${r.updated} atualizadas, ${r.units} unidades, ${r.skipped} bloqueadas.`,
       );
@@ -124,9 +193,20 @@ function ImportadorPage() {
       qc.invalidateQueries({ queryKey: ["org-schools"] });
       qc.invalidateQueries({ queryKey: ["org-tree"] });
       qc.invalidateQueries({ queryKey: ["import-runs"] });
+      qc.invalidateQueries({ queryKey: ["audit-trail"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      setProgress({ status: "error", value: 0, message: e.message });
+      toast.error(e.message);
+    },
   });
+
+  const allCandidates = result?.candidates ?? [];
+  const filtered = useMemo(
+    () => sortCandidates(searchCandidates(allCandidates, term), sortBy, dir),
+    [allCandidates, term, sortBy, dir],
+  );
+  const page = usePaginated(filtered, 10);
 
   if (!rbac.isLoading && !rbac.can("school:import")) {
     return (
@@ -141,28 +221,30 @@ function ImportadorPage() {
     );
   }
 
-  const candidates = result?.candidates ?? [];
-  const chosen = candidates.filter((c) => selected.has(c.key) && isImportable(c));
-  const blockedSelected = candidates.filter((c) => selected.has(c.key) && !isImportable(c));
-  const warningsInChosen = chosen.filter((c) => c.issues.length > 0);
+  const candidates = allCandidates;
   const schools = existingSchools.data ?? [];
+  const chosen = candidates
+    .filter((c) => isSelected(draft.state, c.key) && isImportable(c))
+    .map((c) =>
+      applyFieldDecisions(c, matchExistingSchool(c, schools), draft.state.rejectedFields[c.key] ?? []),
+    );
+  const blockedSelected = candidates.filter(
+    (c) => isSelected(draft.state, c.key) && !isImportable(c),
+  );
+  const warningsInChosen = chosen.filter((c) => c.issues.length > 0);
   const issueGroups = groupIssuesByType(candidates);
   const unitGroups = groupByUnit(candidates);
 
-  /** Ação em lote: aceita (seleciona) ou rejeita (desmarca) um conjunto de chaves. */
+  /** Ação em lote (rascunho): aceita ou rejeita um conjunto de chaves, com desfazer. */
   function applyBulk(label: string, keys: string[], accept: boolean) {
     const importable = keys.filter((k) => {
       const c = candidates.find((x) => x.key === k);
       return c ? isImportable(c) : false;
     });
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (accept) importable.forEach((k) => next.add(k));
-      else keys.forEach((k) => next.delete(k));
-      return next;
-    });
     const n = accept ? importable.length : keys.length;
-    setBulkLog((prev) => [...prev, `${accept ? "Aceitas" : "Rejeitadas"} ${n} · ${label}`]);
+    mutateDraft(`${accept ? "Aceitas" : "Rejeitadas"} ${n} · ${label}`, (s) =>
+      bulkSelect(s, accept ? importable : keys, accept),
+    );
   }
 
   return (
@@ -217,17 +299,57 @@ function ImportadorPage() {
                 </span>
               </div>
 
+              <Card className="p-3 rounded-2xl space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    value={term}
+                    onChange={(e) => setTerm(e.target.value)}
+                    placeholder="Buscar por nome, INEP, CNPJ, unidade ou inconsistência"
+                    className="h-10 pl-9 rounded-xl text-sm"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  {(Object.keys(CANDIDATE_SORT_LABEL) as CandidateSortBy[]).map((k) => (
+                    <Button
+                      key={k}
+                      size="sm"
+                      variant={sortBy === k ? "secondary" : "ghost"}
+                      className="h-7 px-2 text-[11px] rounded-lg"
+                      onClick={() => setSortBy(k)}
+                    >
+                      {CANDIDATE_SORT_LABEL[k]}
+                    </Button>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-[11px] rounded-lg gap-1"
+                    onClick={() => setDir((d) => (d === "asc" ? "desc" : "asc"))}
+                  >
+                    <ArrowDownUp className="size-3" /> {dir === "asc" ? "A–Z" : "Z–A"}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {filtered.length} de {candidates.length} escolas · {rejectedCount(draft.state)} campo(s)
+                  rejeitado(s)
+                </p>
+              </Card>
+
               <Card className="p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold">Ações em lote</h3>
-                  {bulkLog.length > 0 && (
+                  <h3 className="text-xs font-semibold">Ações em lote (rascunho)</h3>
+                  {canUndo(draft) && (
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-[11px] rounded-lg"
-                      onClick={() => setBulkLog([])}
+                      variant="outline"
+                      className="h-7 px-2 text-[11px] rounded-lg gap-1"
+                      onClick={() => {
+                        setDraft((d) => undoDraft(d));
+                        toast.success("Última decisão desfeita.");
+                      }}
                     >
-                      Limpar registro
+                      <Undo2 className="size-3" /> Desfazer
                     </Button>
                   )}
                 </div>
@@ -265,30 +387,36 @@ function ImportadorPage() {
                   </div>
                 </div>
 
-                {bulkLog.length > 0 && (
-                  <ul className="rounded-xl bg-secondary/50 px-3 py-2 space-y-0.5">
-                    {bulkLog.map((l, i) => (
-                      <li key={i} className="text-[11px] text-muted-foreground">
-                        {l}
-                      </li>
-                    ))}
-                  </ul>
+                {draft.history.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Histórico de alterações ({draft.history.length})
+                    </p>
+                    <ul className="mt-1 rounded-xl bg-secondary/50 px-3 py-2 space-y-0.5">
+                      {draft.history.slice(0, 8).map((h, i) => (
+                        <li key={`${h.at}-${i}`} className="text-[11px] text-muted-foreground">
+                          {new Date(h.at).toLocaleTimeString("pt-BR")} · {h.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </Card>
 
-              {candidates.map((c) => {
+              {page.visible.map((c) => {
                 const blocked = !isImportable(c);
                 const isEditing = editing === c.key;
                 const existing = matchExistingSchool(c, schools);
                 const diff = diffCandidate(c, existing);
                 const changes = changedRows(diff);
+                const rejected = draft.state.rejectedFields[c.key] ?? [];
                 return (
                   <Card key={c.key} className="p-3 rounded-2xl">
                     <div className="flex items-start gap-3">
                       <Checkbox
-                        checked={selected.has(c.key)}
+                        checked={isSelected(draft.state, c.key)}
                         disabled={blocked}
-                        onCheckedChange={() => toggle(c.key)}
+                        onCheckedChange={() => toggle(c.key, c.name)}
                         className="mt-1"
                       />
                       <div className="min-w-0 flex-1">
@@ -345,23 +473,79 @@ function ImportadorPage() {
 
                         {comparing === c.key && (
                           <div className="mt-2 rounded-xl border overflow-hidden">
-                            <div className="grid grid-cols-[70px_1fr_1fr] bg-secondary/60 px-2 py-1 text-[10px] font-medium">
+                            <div className="grid grid-cols-[64px_1fr_1fr_56px] bg-secondary/60 px-2 py-1 text-[10px] font-medium">
                               <span>Campo</span>
                               <span>Extraído do PDF</span>
                               <span>{existing ? "Valor atual" : "Não existe na base"}</span>
+                              <span className="text-right">Decisão</span>
                             </div>
-                            {diff.map((row) => (
-                              <div
-                                key={row.field}
-                                className={`grid grid-cols-[70px_1fr_1fr] px-2 py-1 text-[10px] border-t ${
-                                  row.changed ? "bg-amber-500/5" : ""
-                                }`}
-                              >
-                                <span className="text-muted-foreground">{row.label}</span>
-                                <span className={row.changed ? "font-medium" : ""}>{row.extracted}</span>
-                                <span className="text-muted-foreground">{row.current}</span>
-                              </div>
-                            ))}
+                            {diff.map((row) => {
+                              const isRejected = isFieldRejected(draft.state, c.key, row.field);
+                              return (
+                                <div
+                                  key={row.field}
+                                  className={`grid grid-cols-[64px_1fr_1fr_56px] items-center px-2 py-1 text-[10px] border-t ${
+                                    isRejected
+                                      ? "bg-destructive/5"
+                                      : row.changed
+                                        ? "bg-amber-500/10"
+                                        : ""
+                                  }`}
+                                >
+                                  <span className="text-muted-foreground">{row.label}</span>
+                                  <span
+                                    className={
+                                      isRejected
+                                        ? "line-through text-muted-foreground"
+                                        : row.changed
+                                          ? "font-semibold text-amber-700"
+                                          : ""
+                                    }
+                                  >
+                                    {row.extracted}
+                                  </span>
+                                  <span
+                                    className={
+                                      isRejected ? "font-medium" : "text-muted-foreground"
+                                    }
+                                  >
+                                    {row.current}
+                                  </span>
+                                  <div className="flex justify-end">
+                                    {row.changed ? (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 px-1 text-[10px] rounded-md gap-1"
+                                        onClick={() =>
+                                          mutateDraft(
+                                            `${isRejected ? "Aceito" : "Rejeitado"} campo ${row.label} · ${c.name}`,
+                                            (s) =>
+                                              setFieldDecision(s, c.key, row.field, isRejected),
+                                          )
+                                        }
+                                      >
+                                        {isRejected ? (
+                                          <>
+                                            <XCircle className="size-3 text-destructive" /> Rejeitado
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CheckCircle2 className="size-3 text-emerald-600" /> Aceito
+                                          </>
+                                        )}
+                                      </Button>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <p className="border-t bg-secondary/30 px-2 py-1 text-[10px] text-muted-foreground">
+                              {changes.length} diferença(s) · {rejected.length} campo(s) rejeitado(s) nesta
+                              escola
+                            </p>
                           </div>
                         )}
 
@@ -425,7 +609,30 @@ function ImportadorPage() {
                   </Card>
                 );
               })}
+              <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
             </div>
+
+            {progress.status !== "idle" && (
+              <Card
+                className={`p-3 rounded-2xl ${
+                  progress.status === "error" ? "border-destructive/30 bg-destructive/5" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs">
+                  {progress.status === "running" && <Loader2 className="size-3.5 animate-spin" />}
+                  {progress.status === "done" && <CheckCircle2 className="size-3.5 text-emerald-600" />}
+                  {progress.status === "error" && (
+                    <AlertTriangle className="size-3.5 text-destructive" />
+                  )}
+                  <span className={progress.status === "error" ? "text-destructive" : ""}>
+                    {progress.message}
+                  </span>
+                </div>
+                {progress.status !== "error" && (
+                  <Progress value={progress.value} className="mt-2 h-1.5" />
+                )}
+              </Card>
+            )}
 
             {!confirming ? (
               <Button
@@ -447,10 +654,15 @@ function ImportadorPage() {
                     <strong className="text-foreground">{warningsInChosen.length}</strong> com avisos aceitos
                     manualmente.
                   </li>
-                  {bulkLog.length > 0 && (
+                  <li>
+                    <strong className="text-foreground">{rejectedCount(draft.state)}</strong> campo(s)
+                    rejeitado(s) manterão o valor atual da base.
+                  </li>
+                  {draft.history.length > 0 && (
                     <li>
-                      <strong className="text-foreground">{bulkLog.length}</strong> ação(ões) em lote aplicadas:{" "}
-                      {bulkLog.join("; ")}.
+                      <strong className="text-foreground">{draft.history.length}</strong> decisão(ões) no
+                      rascunho: {draft.history.slice(0, 5).map((h) => h.label).join("; ")}
+                      {draft.history.length > 5 ? "..." : "."}
                     </li>
                   )}
                   <li>
@@ -460,7 +672,10 @@ function ImportadorPage() {
                     bloqueada(s) por erro — não serão enviadas
                     {blockedSelected.length > 0 ? " (mesmo marcadas)." : "."}
                   </li>
-                  <li>O histórico desta importação ficará registrado com seu usuário e a data.</li>
+                  <li>
+                    O histórico desta importação e as decisões da revisão ficarão registrados na auditoria
+                    com seu usuário e a data.
+                  </li>
                 </ul>
                 <div className="flex gap-2">
                   <Button
