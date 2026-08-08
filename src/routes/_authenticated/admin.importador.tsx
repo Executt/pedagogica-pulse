@@ -609,7 +609,30 @@ function ImportadorPage() {
                   </Card>
                 );
               })}
+              <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
             </div>
+
+            {progress.status !== "idle" && (
+              <Card
+                className={`p-3 rounded-2xl ${
+                  progress.status === "error" ? "border-destructive/30 bg-destructive/5" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs">
+                  {progress.status === "running" && <Loader2 className="size-3.5 animate-spin" />}
+                  {progress.status === "done" && <CheckCircle2 className="size-3.5 text-emerald-600" />}
+                  {progress.status === "error" && (
+                    <AlertTriangle className="size-3.5 text-destructive" />
+                  )}
+                  <span className={progress.status === "error" ? "text-destructive" : ""}>
+                    {progress.message}
+                  </span>
+                </div>
+                {progress.status !== "error" && (
+                  <Progress value={progress.value} className="mt-2 h-1.5" />
+                )}
+              </Card>
+            )}
 
             {!confirming ? (
               <Button
@@ -631,10 +654,15 @@ function ImportadorPage() {
                     <strong className="text-foreground">{warningsInChosen.length}</strong> com avisos aceitos
                     manualmente.
                   </li>
-                  {bulkLog.length > 0 && (
+                  <li>
+                    <strong className="text-foreground">{rejectedCount(draft.state)}</strong> campo(s)
+                    rejeitado(s) manterão o valor atual da base.
+                  </li>
+                  {draft.history.length > 0 && (
                     <li>
-                      <strong className="text-foreground">{bulkLog.length}</strong> ação(ões) em lote aplicadas:{" "}
-                      {bulkLog.join("; ")}.
+                      <strong className="text-foreground">{draft.history.length}</strong> decisão(ões) no
+                      rascunho: {draft.history.slice(0, 5).map((h) => h.label).join("; ")}
+                      {draft.history.length > 5 ? "..." : "."}
                     </li>
                   )}
                   <li>
@@ -644,7 +672,10 @@ function ImportadorPage() {
                     bloqueada(s) por erro — não serão enviadas
                     {blockedSelected.length > 0 ? " (mesmo marcadas)." : "."}
                   </li>
-                  <li>O histórico desta importação ficará registrado com seu usuário e a data.</li>
+                  <li>
+                    O histórico desta importação e as decisões da revisão ficarão registrados na auditoria
+                    com seu usuário e a data.
+                  </li>
                 </ul>
                 <div className="flex gap-2">
                   <Button
