@@ -1,13 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownUp,
+  CheckCircle2,
+  FileUp,
+  Loader2,
+  Search,
+  ShieldAlert,
+  Undo2,
+  XCircle,
+} from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { LoadMore } from "@/components/query-state";
+import { usePaginated } from "@/hooks/use-paginated";
 import { extractPdfText } from "@/lib/pdf-text";
 import {
   candidateStats,
@@ -19,15 +32,36 @@ import {
 } from "@/domain/import/school-pdf";
 import { Input } from "@/components/ui/input";
 import { importSchoolCandidates } from "@/application/use-cases/org";
-import { orgRepository, useNetworkSchools, useRbac } from "@/hooks/use-org";
+import { orgRepository, useAuditRecorder, useNetworkSchools, useRbac } from "@/hooks/use-org";
 import { ORG_UNIT_LABEL } from "@/domain/org/types";
 import {
+  applyFieldDecisions,
   changedRows,
   diffCandidate,
   groupByUnit,
   groupIssuesByType,
   matchExistingSchool,
 } from "@/domain/import/review";
+import {
+  CANDIDATE_SORT_LABEL,
+  searchCandidates,
+  sortCandidates,
+  type CandidateSortBy,
+  type SortDir,
+} from "@/domain/import/query";
+import {
+  applyDraft,
+  bulkSelect,
+  canUndo,
+  createDraft,
+  isFieldRejected,
+  isSelected,
+  rejectedCount,
+  setFieldDecision,
+  toggleSelection,
+  undoDraft,
+  type Draft,
+} from "@/domain/import/draft";
 
 export const Route = createFileRoute("/_authenticated/admin/importador")({
   head: () => ({
