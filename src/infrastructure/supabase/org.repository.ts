@@ -123,4 +123,20 @@ export const supabaseOrgRepository: OrgRepository = {
     if (error) throw error;
     return (data ?? []) as unknown as AuditEntry[];
   },
+
+  async recordAudit(input): Promise<void> {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw new Error("Sessão expirada.");
+    const { error } = await supabase.from("audit_log").insert({
+      actor_id: auth.user.id,
+      entity: input.entity,
+      entity_id: input.entity_id ?? null,
+      action: input.action,
+      field: input.field ?? null,
+      old_value: input.old_value ?? null,
+      new_value: input.new_value ?? null,
+      metadata: (input.metadata ?? {}) as never,
+    });
+    if (error) throw error;
+  },
 };
