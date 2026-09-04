@@ -1,9 +1,12 @@
 /**
  * Camada de INTERFACE — hooks que ligam a UI aos casos de uso.
  * Nenhum componente deve chamar Supabase ou mock-mode diretamente.
+ *
+ * Leitura: sistema Inteligência Pedagógica primeiro; base local de apoio
+ * como contingência; cenário demo como último recurso (useSmartQuery).
  */
 import { useSmartQuery } from "@/hooks/use-smart-query";
-import { educationRepositories } from "@/infrastructure/container";
+import { educationRepositories, remoteFirst } from "@/infrastructure/container";
 import {
   getClassDetail,
   getStudentDetail,
@@ -12,13 +15,12 @@ import {
 } from "@/application/use-cases/education";
 import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
 
-const api = educationRepositories("supabase");
 const mock = educationRepositories("mock");
 
 export function useClasses() {
   return useSmartQuery<SchoolClass[]>({
     queryKey: ["classes"],
-    apiFn: () => listClasses(api),
+    apiFn: remoteFirst((repos) => listClasses(repos)),
     mockFn: () => listClasses(mock),
   });
 }
@@ -26,7 +28,7 @@ export function useClasses() {
 export function useClassDetail(classId: string) {
   return useSmartQuery<ClassDetail>({
     queryKey: ["class", classId],
-    apiFn: () => getClassDetail(api, classId),
+    apiFn: remoteFirst((repos) => getClassDetail(repos, classId)),
     mockFn: () => getClassDetail(mock, classId),
   });
 }
@@ -34,7 +36,7 @@ export function useClassDetail(classId: string) {
 export function useStudentDetail(studentId: string) {
   return useSmartQuery<StudentDetail>({
     queryKey: ["student", studentId],
-    apiFn: () => getStudentDetail(api, studentId),
+    apiFn: remoteFirst((repos) => getStudentDetail(repos, studentId)),
     mockFn: () => getStudentDetail(mock, studentId),
   });
 }
@@ -42,7 +44,7 @@ export function useStudentDetail(studentId: string) {
 export function useStudents() {
   return useSmartQuery<Student[]>({
     queryKey: ["students"],
-    apiFn: () => listStudents(api),
+    apiFn: remoteFirst((repos) => listStudents(repos)),
     mockFn: () => listStudents(mock),
   });
 }
