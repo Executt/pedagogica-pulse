@@ -21,5 +21,10 @@ export interface EducationRepositories {
   students: StudentRepository;
 }
 
-/** Origem dos dados resolvida pelo composition root. */
-export type DataSourceKind = "supabase" | "mock";
+/**
+ * Origem dos dados resolvida pelo composition root.
+ * - `pulse`: sistema Inteligência Pedagógica (fonte oficial do app)
+ * - `supabase`: base local de apoio (registros enviados pelo app)
+ * - `mock`: cenário de demonstração
+ */
+export type DataSourceKind = "pulse" | "supabase" | "mock";
