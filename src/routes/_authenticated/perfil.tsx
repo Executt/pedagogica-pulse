@@ -294,11 +294,18 @@ function AdminImportLink() {
         <ChevronRight className="size-4 text-muted-foreground" />
       </Link>
       {rbac.can("org:manage") && (
-        <Link to="/admin/auditoria" className="flex items-center gap-3 p-4 active:bg-secondary/50">
-          <Building2 className="size-4 text-primary" />
-          <span className="flex-1 text-sm font-medium">Trilha de auditoria</span>
-          <ChevronRight className="size-4 text-muted-foreground" />
-        </Link>
+        <>
+          <Link to="/admin/auditoria" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+            <Building2 className="size-4 text-primary" />
+            <span className="flex-1 text-sm font-medium">Trilha de auditoria</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
+          <Link to="/admin/integracoes" className="flex items-center gap-3 p-4 active:bg-secondary/50">
+            <Plug className="size-4 text-primary" />
+            <span className="flex-1 text-sm font-medium">Integrações (Hub)</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
+        </>
       )}
     </>
   );
