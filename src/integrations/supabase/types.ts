@@ -193,6 +193,57 @@ export type Database = {
           },
         ]
       }
+      conectores_integracao: {
+        Row: {
+          ativo: boolean
+          base_url: string | null
+          config: Json
+          created_at: string
+          id: string
+          nome: string
+          secret: string | null
+          slug: string
+          tipo: string
+          ultimo_erro: string | null
+          ultimo_status: number | null
+          ultimo_teste_em: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          nome: string
+          secret?: string | null
+          slug: string
+          tipo: string
+          ultimo_erro?: string | null
+          ultimo_status?: number | null
+          ultimo_teste_em?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          nome?: string
+          secret?: string | null
+          slug?: string
+          tipo?: string
+          ultimo_erro?: string | null
+          ultimo_status?: number | null
+          ultimo_teste_em?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_integracao: {
         Row: {
           created_at: string

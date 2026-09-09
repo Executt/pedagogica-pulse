@@ -24,6 +24,7 @@ import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAlunosIndexRouteImport } from './routes/_authenticated/alunos.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
+import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminImportadorRouteImport } from './routes/_authenticated/admin.importador'
 import { Route as AuthenticatedAdminImportacoesRouteImport } from './routes/_authenticated/admin.importacoes'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
@@ -114,6 +115,12 @@ const AuthenticatedAlunosStudentIdRoute =
     path: '/alunos/$studentId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminIntegracoesRoute =
+  AuthenticatedAdminIntegracoesRouteImport.update({
+    id: '/admin/integracoes',
+    path: '/admin/integracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminImportadorRoute =
   AuthenticatedAdminImportadorRouteImport.update({
     id: '/admin/importador',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/importacoes': typeof AuthenticatedAdminImportacoesRoute
   '/admin/importador': typeof AuthenticatedAdminImportadorRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/alunos/': typeof AuthenticatedAlunosIndexRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/importacoes': typeof AuthenticatedAdminImportacoesRoute
   '/admin/importador': typeof AuthenticatedAdminImportadorRoute
+  '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/alunos': typeof AuthenticatedAlunosIndexRoute
@@ -236,6 +245,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/importacoes': typeof AuthenticatedAdminImportacoesRoute
   '/_authenticated/admin/importador': typeof AuthenticatedAdminImportadorRoute
+  '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/_authenticated/alunos/': typeof AuthenticatedAlunosIndexRoute
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/importacoes'
     | '/admin/importador'
+    | '/admin/integracoes'
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/alunos/'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/importacoes'
     | '/admin/importador'
+    | '/admin/integracoes'
     | '/alunos/$studentId'
     | '/turmas/$classId'
     | '/alunos'
@@ -316,6 +328,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/importacoes'
     | '/_authenticated/admin/importador'
+    | '/_authenticated/admin/integracoes'
     | '/_authenticated/alunos/$studentId'
     | '/_authenticated/turmas/$classId'
     | '/_authenticated/alunos/'
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlunosStudentIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/integracoes': {
+      id: '/_authenticated/admin/integracoes'
+      path: '/admin/integracoes'
+      fullPath: '/admin/integracoes'
+      preLoaderRoute: typeof AuthenticatedAdminIntegracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/importador': {
       id: '/_authenticated/admin/importador'
       path: '/admin/importador'
@@ -547,6 +567,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminImportacoesRoute: typeof AuthenticatedAdminImportacoesRoute
   AuthenticatedAdminImportadorRoute: typeof AuthenticatedAdminImportadorRoute
+  AuthenticatedAdminIntegracoesRoute: typeof AuthenticatedAdminIntegracoesRoute
   AuthenticatedAlunosStudentIdRoute: typeof AuthenticatedAlunosStudentIdRoute
   AuthenticatedAlunosIndexRoute: typeof AuthenticatedAlunosIndexRoute
 }
@@ -563,6 +584,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminImportacoesRoute: AuthenticatedAdminImportacoesRoute,
   AuthenticatedAdminImportadorRoute: AuthenticatedAdminImportadorRoute,
+  AuthenticatedAdminIntegracoesRoute: AuthenticatedAdminIntegracoesRoute,
   AuthenticatedAlunosStudentIdRoute: AuthenticatedAlunosStudentIdRoute,
   AuthenticatedAlunosIndexRoute: AuthenticatedAlunosIndexRoute,
 }
