@@ -14,7 +14,7 @@ export type ConnectorView = {
   nome: string;
   tipo: ConnectorKind;
   base_url: string | null;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   ativo: boolean;
   ultimo_status: number | null;
   ultimo_teste_em: string | null;
@@ -29,7 +29,7 @@ const UpsertSchema = z.object({
   nome: z.string().trim().min(2).max(120),
   tipo: z.enum(["pulse", "rest", "soap", "sftp"]),
   baseUrl: z.string().trim().max(300).optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
+  config: z.record(z.string(), z.any()).optional(),
   secret: z.string().trim().max(500).optional(),
   ativo: z.boolean().optional(),
 });
@@ -68,7 +68,7 @@ export const saveConnector = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperadmin(context.supabase as never);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const row: Record<string, unknown> = {
+    const row: Record<string, any> = {
       slug: data.slug,
       nome: data.nome,
       tipo: data.tipo,
@@ -82,7 +82,7 @@ export const saveConnector = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("conectores_integracao")
-      .upsert(row, { onConflict: "slug" });
+      .upsert(row as never, { onConflict: "slug" });
     if (error) return { ok: false, error: error.message };
     return { ok: true, error: null as string | null };
   });
