@@ -10,7 +10,7 @@ import { LoadMore } from "@/components/query-state";
 import { EMPTY_SCOPE, OrgScopeFilter, useOrgScope, type OrgScope } from "@/components/org-scope-filter";
 import { orgUnitPath } from "@/domain/org/rules";
 
-export const Route = createFileRoute("/_authenticated/escolas")({
+export const Route = createFileRoute("/_authenticated/escolas/")({
   head: () => ({
     meta: [
       { title: "Escolas da rede — Inteligência Pedagógica" },
