@@ -56,6 +56,15 @@ export type ClassDetail = {
   events: unknown[];
 };
 
+export type SchoolDashboard = {
+  classes: SchoolClass[];
+  students: Student[];
+  materials: unknown[];
+  observations: Observation[];
+  suggestions: unknown[];
+  events: unknown[];
+};
+
 export type StudentDetail = {
   student: (Student & { classes?: { name?: string; grade?: string } | null }) | null;
   observations: Observation[];

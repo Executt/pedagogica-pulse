@@ -5,9 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   ClassRepository,
   EducationRepositories,
+  SchoolDashboardRepository,
   StudentRepository,
 } from "@/application/ports/education-repository";
-import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
+import type {
+  ClassDetail,
+  Observation,
+  SchoolClass,
+  SchoolDashboard,
+  Student,
+  StudentDetail,
+} from "@/domain/education/types";
 
 const classRepository: ClassRepository = {
   async list(): Promise<SchoolClass[]> {
@@ -81,7 +89,69 @@ const studentRepository: StudentRepository = {
   },
 };
 
+const schoolRepository: SchoolDashboardRepository = {
+  async getDashboard(schoolId: string): Promise<SchoolDashboard> {
+    const [classesRes, materialsRes, suggestionsRes, eventsRes] = await Promise.all([
+      supabase.from("classes").select("*").eq("school_id", schoolId).order("name"),
+      supabase
+        .from("materials")
+        .select("*")
+        .eq("school_id", schoolId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("ai_suggestions")
+        .select("*")
+        .eq("school_id", schoolId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase.from("events").select("*").eq("school_id", schoolId).order("starts_at").limit(50),
+    ]);
+
+    const classRows = (classesRes.data ?? []) as unknown as SchoolClass[];
+    const classIds = classRows.map((c) => c.id);
+    const studentsRes = classIds.length
+      ? await supabase.from("students").select("*").in("class_id", classIds).order("full_name")
+      : { data: [] as unknown[] };
+    const students = ((studentsRes.data ?? []) as unknown as Student[]).map((s) => ({
+      ...s,
+      school_id: schoolId,
+      class_name: classRows.find((c) => c.id === s.class_id)?.name ?? null,
+    }));
+
+    const studentIds = students.map((s) => s.id);
+    const obsRes = studentIds.length
+      ? await supabase
+          .from("observations")
+          .select("*")
+          .in("student_id", studentIds)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : { data: [] as unknown[] };
+
+    return {
+      classes: classRows.map((c) => ({
+        ...c,
+        students: students
+          .filter((s) => s.class_id === c.id)
+          .map((s) => ({
+            id: s.id,
+            full_name: s.full_name,
+            risk: s.risk,
+            attendance_rate: s.attendance_rate,
+          })),
+      })),
+      students,
+      materials: materialsRes.data ?? [],
+      observations: (obsRes.data ?? []) as unknown as Observation[],
+      suggestions: suggestionsRes.data ?? [],
+      events: eventsRes.data ?? [],
+    };
+  },
+};
+
 export const supabaseEducationRepositories: EducationRepositories = {
   classes: classRepository,
   students: studentRepository,
+  schools: schoolRepository,
 };
