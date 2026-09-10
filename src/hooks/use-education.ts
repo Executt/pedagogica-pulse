@@ -9,11 +9,27 @@ import { useSmartQuery } from "@/hooks/use-smart-query";
 import { educationRepositories, remoteFirst } from "@/infrastructure/container";
 import {
   getClassDetail,
+  getSchoolDashboard,
   getStudentDetail,
   listClasses,
   listStudents,
 } from "@/application/use-cases/education";
-import type { ClassDetail, SchoolClass, Student, StudentDetail } from "@/domain/education/types";
+import type {
+  ClassDetail,
+  SchoolClass,
+  SchoolDashboard,
+  Student,
+  StudentDetail,
+} from "@/domain/education/types";
+
+export function useSchoolDashboard(schoolId: string) {
+  return useSmartQuery<SchoolDashboard>({
+    queryKey: ["school-dashboard", schoolId],
+    apiFn: remoteFirst((repos) => getSchoolDashboard(repos, schoolId)),
+    mockFn: () => getSchoolDashboard(mock, schoolId),
+    enabled: Boolean(schoolId),
+  });
+}
 
 const mock = educationRepositories("mock");
 
