@@ -24,6 +24,7 @@ import { Route as AuthenticatedTurmasIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEscolasIndexRouteImport } from './routes/_authenticated/escolas.index'
 import { Route as AuthenticatedAlunosIndexRouteImport } from './routes/_authenticated/alunos.index'
 import { Route as AuthenticatedTurmasClassIdRouteImport } from './routes/_authenticated/turmas.$classId'
+import { Route as AuthenticatedEscolasSchoolIdRouteImport } from './routes/_authenticated/escolas.$schoolId'
 import { Route as AuthenticatedAlunosStudentIdRouteImport } from './routes/_authenticated/alunos.$studentId'
 import { Route as AuthenticatedAdminIntegracoesRouteImport } from './routes/_authenticated/admin.integracoes'
 import { Route as AuthenticatedAdminImportadorRouteImport } from './routes/_authenticated/admin.importador'
@@ -116,6 +117,12 @@ const AuthenticatedTurmasClassIdRoute =
     path: '/$classId',
     getParentRoute: () => AuthenticatedTurmasRoute,
   } as any)
+const AuthenticatedEscolasSchoolIdRoute =
+  AuthenticatedEscolasSchoolIdRouteImport.update({
+    id: '/$schoolId',
+    path: '/$schoolId',
+    getParentRoute: () => AuthenticatedEscolasRoute,
+  } as any)
 const AuthenticatedAlunosStudentIdRoute =
   AuthenticatedAlunosStudentIdRouteImport.update({
     id: '/alunos/$studentId',
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
+  '/escolas/$schoolId': typeof AuthenticatedEscolasSchoolIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/alunos/': typeof AuthenticatedAlunosIndexRoute
   '/escolas/': typeof AuthenticatedEscolasIndexRoute
@@ -225,6 +233,7 @@ export interface FileRoutesByTo {
   '/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
+  '/escolas/$schoolId': typeof AuthenticatedEscolasSchoolIdRoute
   '/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/alunos': typeof AuthenticatedAlunosIndexRoute
   '/escolas': typeof AuthenticatedEscolasIndexRoute
@@ -255,6 +264,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/importador': typeof AuthenticatedAdminImportadorRoute
   '/_authenticated/admin/integracoes': typeof AuthenticatedAdminIntegracoesRoute
   '/_authenticated/alunos/$studentId': typeof AuthenticatedAlunosStudentIdRoute
+  '/_authenticated/escolas/$schoolId': typeof AuthenticatedEscolasSchoolIdRoute
   '/_authenticated/turmas/$classId': typeof AuthenticatedTurmasClassIdRoute
   '/_authenticated/alunos/': typeof AuthenticatedAlunosIndexRoute
   '/_authenticated/escolas/': typeof AuthenticatedEscolasIndexRoute
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/admin/importador'
     | '/admin/integracoes'
     | '/alunos/$studentId'
+    | '/escolas/$schoolId'
     | '/turmas/$classId'
     | '/alunos/'
     | '/escolas/'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/admin/importador'
     | '/admin/integracoes'
     | '/alunos/$studentId'
+    | '/escolas/$schoolId'
     | '/turmas/$classId'
     | '/alunos'
     | '/escolas'
@@ -340,6 +352,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/importador'
     | '/_authenticated/admin/integracoes'
     | '/_authenticated/alunos/$studentId'
+    | '/_authenticated/escolas/$schoolId'
     | '/_authenticated/turmas/$classId'
     | '/_authenticated/alunos/'
     | '/_authenticated/escolas/'
@@ -473,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTurmasClassIdRouteImport
       parentRoute: typeof AuthenticatedTurmasRoute
     }
+    '/_authenticated/escolas/$schoolId': {
+      id: '/_authenticated/escolas/$schoolId'
+      path: '/$schoolId'
+      fullPath: '/escolas/$schoolId'
+      preLoaderRoute: typeof AuthenticatedEscolasSchoolIdRouteImport
+      parentRoute: typeof AuthenticatedEscolasRoute
+    }
     '/_authenticated/alunos/$studentId': {
       id: '/_authenticated/alunos/$studentId'
       path: '/alunos/$studentId'
@@ -561,10 +581,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedEscolasRouteChildren {
+  AuthenticatedEscolasSchoolIdRoute: typeof AuthenticatedEscolasSchoolIdRoute
   AuthenticatedEscolasIndexRoute: typeof AuthenticatedEscolasIndexRoute
 }
 
 const AuthenticatedEscolasRouteChildren: AuthenticatedEscolasRouteChildren = {
+  AuthenticatedEscolasSchoolIdRoute: AuthenticatedEscolasSchoolIdRoute,
   AuthenticatedEscolasIndexRoute: AuthenticatedEscolasIndexRoute,
 }
 

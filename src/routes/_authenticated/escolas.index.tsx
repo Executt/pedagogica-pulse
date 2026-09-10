@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, School as SchoolIcon, MapPin } from "lucide-react";
+import { Search, School as SchoolIcon, MapPin, ChevronRight } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -57,7 +57,8 @@ function EscolasPage() {
         )}
 
         {page.visible.map((s) => (
-          <Card key={s.id} className="p-4 rounded-2xl flex items-start gap-3">
+          <Link key={s.id} to="/escolas/$schoolId" params={{ schoolId: s.id }} className="block">
+          <Card className="p-4 rounded-2xl flex items-start gap-3 active:scale-[0.99] transition-transform">
             <div className="size-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
               <SchoolIcon className="size-4" />
             </div>
@@ -80,7 +81,9 @@ function EscolasPage() {
                 ))}
               </div>
             </div>
+            <ChevronRight className="size-4 text-muted-foreground self-center shrink-0" />
           </Card>
+          </Link>
         ))}
         <LoadMore hasMore={page.hasMore} onMore={page.loadMore} />
       </div>
