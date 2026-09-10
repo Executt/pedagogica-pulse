@@ -12,11 +12,13 @@ import { fetchPulseResource } from "@/lib/pulse-read.functions";
 import type {
   ClassRepository,
   EducationRepositories,
+  SchoolDashboardRepository,
   StudentRepository,
 } from "@/application/ports/education-repository";
 import type {
   ClassDetail,
   Observation,
+  SchoolDashboard,
   RiskLevel,
   SchoolClass,
   Student,
@@ -33,10 +35,14 @@ export class PulseReadUnavailableError extends Error {
   }
 }
 
-async function read(resource: Resource, params: { classId?: string; studentId?: string; limit?: number } = {}) {
+async function read(
+  resource: Resource,
+  params: { classId?: string; studentId?: string; schoolId?: string; limit?: number } = {},
+) {
   const res = await fetchPulseResource({
     data: {
       resource,
+      ...(params.schoolId ? { schoolId: params.schoolId } : {}),
       ...(params.classId ? { classId: params.classId } : {}),
       ...(params.studentId ? { studentId: params.studentId } : {}),
       limit: params.limit ?? 200,
@@ -148,7 +154,31 @@ const studentRepository: StudentRepository = {
   },
 };
 
+const schoolRepository: SchoolDashboardRepository = {
+  async getDashboard(schoolId: string): Promise<SchoolDashboard> {
+    const [turmas, alunos, registros, observacoes, sugestoes, agenda] = await Promise.all([
+      read("turmas", { schoolId }),
+      read("alunos", { schoolId }),
+      read("registros", { schoolId }).catch(() => [] as Row[]),
+      read("observacoes", { schoolId }).catch(() => [] as Row[]),
+      read("sugestoes", { schoolId }).catch(() => [] as Row[]),
+      read("agenda", { schoolId }).catch(() => [] as Row[]),
+    ]);
+    const belongs = (row: Row) => !row["school_id"] || str(row["school_id"]) === schoolId;
+    const students = alunos.filter(belongs).map(toStudent);
+    return {
+      classes: turmas.filter(belongs).map((t) => toClass(t, students)),
+      students,
+      materials: registros.filter(belongs),
+      observations: observacoes.map(toObservation),
+      suggestions: sugestoes.filter(belongs),
+      events: agenda.filter(belongs),
+    };
+  },
+};
+
 export const pulseEducationRepositories: EducationRepositories = {
   classes: classRepository,
   students: studentRepository,
+  schools: schoolRepository,
 };
