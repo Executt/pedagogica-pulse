@@ -34,11 +34,13 @@ function TurmaDetail() {
       </header>
 
       <Tabs defaultValue="overview" className="flex-1">
-        <TabsList className="w-full grid grid-cols-4 h-11 rounded-none bg-background border-b sticky top-14 z-10">
-          <TabsTrigger value="overview" className="text-xs rounded-none">Geral</TabsTrigger>
-          <TabsTrigger value="students" className="text-xs rounded-none">Alunos</TabsTrigger>
-          <TabsTrigger value="materials" className="text-xs rounded-none">Materiais</TabsTrigger>
-          <TabsTrigger value="agenda" className="text-xs rounded-none">Agenda</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-6 h-11 rounded-none bg-background border-b sticky top-14 z-10">
+          <TabsTrigger value="overview" className="text-[11px] px-1 rounded-none">Geral</TabsTrigger>
+          <TabsTrigger value="students" className="text-[11px] px-1 rounded-none">Alunos</TabsTrigger>
+          <TabsTrigger value="materials" className="text-[11px] px-1 rounded-none">Materiais</TabsTrigger>
+          <TabsTrigger value="agenda" className="text-[11px] px-1 rounded-none">Agenda</TabsTrigger>
+          <TabsTrigger value="obs" className="text-[11px] px-1 rounded-none">Observ.</TabsTrigger>
+          <TabsTrigger value="ai" className="text-[11px] px-1 rounded-none">Sugestões</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="p-5 space-y-4">
