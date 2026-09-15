@@ -71,4 +71,5 @@ export type StudentDetail = {
   student: (Student & { classes?: { name?: string; grade?: string } | null }) | null;
   observations: Observation[];
   suggestions: unknown[];
+  materials: unknown[];
 };
