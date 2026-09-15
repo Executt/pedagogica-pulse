@@ -114,19 +114,35 @@ const classRepository: ClassRepository = {
   },
 
   async getDetail(classId: string): Promise<ClassDetail> {
-    const [turmas, alunos, registros, agenda] = await Promise.all([
+    const [turmas, alunos, registros, agenda, sugestoes] = await Promise.all([
       read("turmas"),
       read("alunos", { classId }),
       read("registros", { classId }).catch(() => [] as Row[]),
       read("agenda", { classId }).catch(() => [] as Row[]),
+      read("sugestoes", { classId }).catch(() => [] as Row[]),
     ]);
     const students = alunos.map(toStudent).filter((s) => s.class_id === classId || !s.class_id);
     const turmaRow = turmas.find((t) => str(t["id"]) === classId) ?? null;
+
+    const ids = new Set(students.map((s) => s.id));
+    const nameById = new Map(students.map((s) => [s.id, s.full_name] as const));
+    const observacoes = await read("observacoes", { limit: 300 }).catch(() => [] as Row[]);
+    const observations = observacoes
+      .filter((o) => ids.has(str(o["student_id"])))
+      .map((o) => {
+        const base = toObservation(o);
+        const who = nameById.get(str(o["student_id"]));
+        return who ? { ...base, author: base.author ? `${base.author} · ${who}` : who } : base;
+      })
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
     return {
       turma: turmaRow ? toClass(turmaRow, students) : null,
       students,
       materials: registros,
       events: agenda,
+      observations,
+      suggestions: sugestoes,
     };
   },
 };
