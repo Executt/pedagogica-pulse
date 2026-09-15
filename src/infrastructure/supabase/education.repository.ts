@@ -86,7 +86,7 @@ const studentRepository: StudentRepository = {
   },
 
   async getDetail(studentId: string): Promise<StudentDetail> {
-    const [s, obs, sug] = await Promise.all([
+    const [s, obs, sug, mat] = await Promise.all([
       supabase.from("students").select("*, classes(name, grade)").eq("id", studentId).maybeSingle(),
       supabase
         .from("observations")
