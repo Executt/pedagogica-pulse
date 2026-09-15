@@ -396,9 +396,10 @@ export function getMockStudentDetail(studentId: string) {
     },
     observations: s.observations.map((o) => ({
       id: o.id, content: o.content, type: o.type,
-      created_at: o.created_at, author_name: o.author,
+      created_at: o.created_at, author: o.author, author_name: o.author,
     })),
     suggestions,
+    materials: d.materials.filter((m) => m.student_id === studentId),
   };
 }
 
