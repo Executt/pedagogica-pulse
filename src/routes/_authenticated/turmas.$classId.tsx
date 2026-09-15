@@ -100,6 +100,39 @@ function TurmaDetail() {
             </Card>
           ))}
         </TabsContent>
+
+        <TabsContent value="obs" className="p-5 space-y-2">
+          {(d?.observations?.length ?? 0) === 0 && <EmptyState icon={MessageSquare} text="Nenhuma observação registrada." />}
+          {d?.observations?.map((o: any) => (
+            <Card key={o.id} className="p-4 rounded-2xl">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="size-4 text-muted-foreground mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">{o.content}</p>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {o.author ? `${o.author} · ` : ""}{new Date(o.created_at).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="ai" className="p-5 space-y-2">
+          {(d?.suggestions?.length ?? 0) === 0 && <EmptyState icon={Sparkles} text="Sem sugestões para esta turma." />}
+          {d?.suggestions?.map((sg: any) => (
+            <Card key={sg.id} className="p-4 rounded-2xl">
+              <div className="flex items-start gap-2">
+                <Sparkles className="size-4 text-accent mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{sg.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{sg.description}</p>
+                  <p className="text-[10px] uppercase mt-2 font-semibold text-muted-foreground">{sg.status}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </TabsContent>
       </Tabs>
 
       <div style={{ height: 80 }} />
