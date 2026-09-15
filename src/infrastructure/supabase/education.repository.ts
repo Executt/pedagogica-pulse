@@ -98,11 +98,18 @@ const studentRepository: StudentRepository = {
         .select("*")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("materials")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
     return {
       student: (s.data ?? null) as unknown as StudentDetail["student"],
       observations: (obs.data ?? []) as unknown as StudentDetail["observations"],
       suggestions: sug.data ?? [],
+      materials: mat.data ?? [],
     };
   },
 };
