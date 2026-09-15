@@ -28,7 +28,7 @@ const classRepository: ClassRepository = {
   },
 
   async getDetail(classId: string): Promise<ClassDetail> {
-    const [c, students, materials, events] = await Promise.all([
+    const [c, students, materials, events, suggestions] = await Promise.all([
       supabase.from("classes").select("*").eq("id", classId).maybeSingle(),
       supabase.from("students").select("*").eq("class_id", classId).order("full_name"),
       supabase
@@ -37,12 +37,30 @@ const classRepository: ClassRepository = {
         .eq("class_id", classId)
         .order("created_at", { ascending: false }),
       supabase.from("events").select("*").eq("class_id", classId).order("starts_at"),
+      supabase
+        .from("ai_suggestions")
+        .select("*")
+        .eq("class_id", classId)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
+    const studentRows = (students.data ?? []) as unknown as Student[];
+    const studentIds = studentRows.map((s) => s.id);
+    const obsRes = studentIds.length
+      ? await supabase
+          .from("observations")
+          .select("*")
+          .in("student_id", studentIds)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : { data: [] as unknown[] };
     return {
       turma: (c.data ?? null) as unknown as SchoolClass | null,
-      students: (students.data ?? []) as unknown as Student[],
+      students: studentRows,
       materials: materials.data ?? [],
       events: events.data ?? [],
+      observations: (obsRes.data ?? []) as unknown as Observation[],
+      suggestions: suggestions.data ?? [],
     };
   },
 };
@@ -68,7 +86,7 @@ const studentRepository: StudentRepository = {
   },
 
   async getDetail(studentId: string): Promise<StudentDetail> {
-    const [s, obs, sug] = await Promise.all([
+    const [s, obs, sug, mat] = await Promise.all([
       supabase.from("students").select("*, classes(name, grade)").eq("id", studentId).maybeSingle(),
       supabase
         .from("observations")
@@ -80,11 +98,18 @@ const studentRepository: StudentRepository = {
         .select("*")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("materials")
+        .select("*")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
     return {
       student: (s.data ?? null) as unknown as StudentDetail["student"],
       observations: (obs.data ?? []) as unknown as StudentDetail["observations"],
       suggestions: sug.data ?? [],
+      materials: mat.data ?? [],
     };
   },
 };

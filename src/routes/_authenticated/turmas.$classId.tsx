@@ -34,11 +34,13 @@ function TurmaDetail() {
       </header>
 
       <Tabs defaultValue="overview" className="flex-1">
-        <TabsList className="w-full grid grid-cols-4 h-11 rounded-none bg-background border-b sticky top-14 z-10">
-          <TabsTrigger value="overview" className="text-xs rounded-none">Geral</TabsTrigger>
-          <TabsTrigger value="students" className="text-xs rounded-none">Alunos</TabsTrigger>
-          <TabsTrigger value="materials" className="text-xs rounded-none">Materiais</TabsTrigger>
-          <TabsTrigger value="agenda" className="text-xs rounded-none">Agenda</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-6 h-11 rounded-none bg-background border-b sticky top-14 z-10">
+          <TabsTrigger value="overview" className="text-[11px] px-1 rounded-none">Geral</TabsTrigger>
+          <TabsTrigger value="students" className="text-[11px] px-1 rounded-none">Alunos</TabsTrigger>
+          <TabsTrigger value="materials" className="text-[11px] px-1 rounded-none">Materiais</TabsTrigger>
+          <TabsTrigger value="agenda" className="text-[11px] px-1 rounded-none">Agenda</TabsTrigger>
+          <TabsTrigger value="obs" className="text-[11px] px-1 rounded-none">Observ.</TabsTrigger>
+          <TabsTrigger value="ai" className="text-[11px] px-1 rounded-none">Sugestões</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="p-5 space-y-4">
@@ -95,6 +97,39 @@ function TurmaDetail() {
               <p className="text-sm font-semibold">{e.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
               {e.location && <p className="text-xs text-muted-foreground mt-1">📍 {e.location}</p>}
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="obs" className="p-5 space-y-2">
+          {(d?.observations?.length ?? 0) === 0 && <EmptyState icon={MessageSquare} text="Nenhuma observação registrada." />}
+          {d?.observations?.map((o: any) => (
+            <Card key={o.id} className="p-4 rounded-2xl">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="size-4 text-muted-foreground mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">{o.content}</p>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {o.author ? `${o.author} · ` : ""}{new Date(o.created_at).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="ai" className="p-5 space-y-2">
+          {(d?.suggestions?.length ?? 0) === 0 && <EmptyState icon={Sparkles} text="Sem sugestões para esta turma." />}
+          {d?.suggestions?.map((sg: any) => (
+            <Card key={sg.id} className="p-4 rounded-2xl">
+              <div className="flex items-start gap-2">
+                <Sparkles className="size-4 text-accent mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{sg.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{sg.description}</p>
+                  <p className="text-[10px] uppercase mt-2 font-semibold text-muted-foreground">{sg.status}</p>
+                </div>
+              </div>
             </Card>
           ))}
         </TabsContent>

@@ -18,8 +18,12 @@ import type {
   StudentDetail,
 } from "@/domain/education/types";
 
-const EMPTY_CLASS: ClassDetail = { turma: null, students: [], materials: [], events: [] };
-const EMPTY_STUDENT: StudentDetail = { student: null, observations: [], suggestions: [] };
+const EMPTY_CLASS: ClassDetail = {
+  turma: null, students: [], materials: [], events: [], observations: [], suggestions: [],
+};
+const EMPTY_STUDENT: StudentDetail = {
+  student: null, observations: [], suggestions: [], materials: [],
+};
 
 const classRepository: ClassRepository = {
   async list(): Promise<SchoolClass[]> {

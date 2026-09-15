@@ -54,6 +54,8 @@ export type ClassDetail = {
   students: Student[];
   materials: unknown[];
   events: unknown[];
+  observations: Observation[];
+  suggestions: unknown[];
 };
 
 export type SchoolDashboard = {
@@ -69,4 +71,5 @@ export type StudentDetail = {
   student: (Student & { classes?: { name?: string; grade?: string } | null }) | null;
   observations: Observation[];
   suggestions: unknown[];
+  materials: unknown[];
 };

@@ -359,6 +359,15 @@ export function getMockClassDetail(classId: string) {
   const students = d.students.filter((s) => s.class_id === classId);
   const materials = d.materials.filter((m) => m.class_id === classId);
   const events = d.events.filter((e) => e.class_id === classId);
+  const observations = students
+    .flatMap((s) =>
+      s.observations.map((o) => ({
+        id: o.id, content: o.content, type: o.type,
+        created_at: o.created_at, author: `${o.author} · ${s.full_name}`,
+      })),
+    )
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const suggestions = d.suggestions.filter((sg) => sg.class_id === classId);
   return {
     turma: { id: turma.id, name: turma.name, grade: turma.grade, year: turma.year },
     students: students.map((s) => ({
@@ -367,6 +376,8 @@ export function getMockClassDetail(classId: string) {
     })),
     materials,
     events,
+    observations,
+    suggestions,
   };
 }
 
@@ -385,9 +396,10 @@ export function getMockStudentDetail(studentId: string) {
     },
     observations: s.observations.map((o) => ({
       id: o.id, content: o.content, type: o.type,
-      created_at: o.created_at, author_name: o.author,
+      created_at: o.created_at, author: o.author, author_name: o.author,
     })),
     suggestions,
+    materials: d.materials.filter((m) => m.student_id === studentId),
   };
 }
 
