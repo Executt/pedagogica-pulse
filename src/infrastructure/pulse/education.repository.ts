@@ -153,10 +153,11 @@ const studentRepository: StudentRepository = {
   },
 
   async getDetail(studentId: string): Promise<StudentDetail> {
-    const [alunos, observacoes, sugestoes] = await Promise.all([
+    const [alunos, observacoes, sugestoes, registros] = await Promise.all([
       read("alunos", { studentId }),
       read("observacoes", { studentId }).catch(() => [] as Row[]),
       read("sugestoes", { studentId }).catch(() => [] as Row[]),
+      read("registros", { studentId }).catch(() => [] as Row[]),
     ]);
     const row = alunos.find((a) => str(a["id"]) === studentId) ?? alunos[0];
     const student = row ? toStudent(row) : null;
