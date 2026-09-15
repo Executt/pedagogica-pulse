@@ -54,6 +54,8 @@ export type ClassDetail = {
   students: Student[];
   materials: unknown[];
   events: unknown[];
+  observations: Observation[];
+  suggestions: unknown[];
 };
 
 export type SchoolDashboard = {
