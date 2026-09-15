@@ -167,6 +167,7 @@ const studentRepository: StudentRepository = {
         : null,
       observations: observacoes.map(toObservation),
       suggestions: sugestoes,
+      materials: registros,
     };
   },
 };
